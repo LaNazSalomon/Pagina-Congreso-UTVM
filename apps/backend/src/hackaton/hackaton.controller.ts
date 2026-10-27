@@ -65,6 +65,12 @@ export class HackatonController {
   ) {
     return this.evaluadores.replace(id, dto);
   }
+  @Post(':id/evaluadores') addEvaluators(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReemplazarEvaluadoresDto,
+  ) {
+    return this.evaluadores.add(id, dto);
+  }
   @Get(':id/equipos') teams(@Param('id', ParseUUIDPipe) id: string) {
     return this.equipos.findAll(id);
   }
@@ -106,6 +112,15 @@ export class HackatonController {
   ) {
     const out = await this.reconocimientos.evaluadoresZip(id);
     res.type('application/zip').attachment(out.filename).send(out.zip);
+  }
+  @Post(':hackatonId/evaluadores/:evaluadorId/reconocimiento/pdf')
+  async evaluatorPdf(
+    @Param('hackatonId', ParseUUIDPipe) hid: string,
+    @Param('evaluadorId', ParseUUIDPipe) eid: string,
+    @Res() res: Response,
+  ) {
+    const out = await this.reconocimientos.evaluadorPdf(hid, eid);
+    res.type('application/pdf').attachment(out.filename).send(out.pdf);
   }
   @Post(':hackatonId/equipos/:equipoId/reconocimientos/zip') async teamZip(
     @Param('hackatonId', ParseUUIDPipe) hid: string,

@@ -6,6 +6,7 @@ import Handlebars from 'handlebars';
 
 @Injectable()
 export class PlantillaCorreoService {
+  private readonly enlaceContrasenaPersonalTemplate: Handlebars.TemplateDelegate;
   private readonly qrAccesoTemplate: Handlebars.TemplateDelegate<{
     nombreParticipante: string;
     nombreCongreso: string;
@@ -18,6 +19,13 @@ export class PlantillaCorreoService {
   }>;
 
   constructor() {
+    this.enlaceContrasenaPersonalTemplate = Handlebars.compile(
+      readFileSync(
+        join(__dirname, 'templates', 'personal-enlace-contrasena.hbs'),
+        'utf8',
+      ),
+      { strict: true },
+    );
     const qrAccesoPath = join(__dirname, 'templates', 'qr-acceso.hbs');
 
     this.qrAccesoTemplate = Handlebars.compile(
@@ -47,5 +55,12 @@ export class PlantillaCorreoService {
 
   renderCodigoLogin(data: { codigo: string; minutosVigencia: number }): string {
     return this.codigoLoginTemplate(data);
+  }
+
+  renderEnlaceContrasenaPersonal(data: {
+    minutosVigencia: number;
+    accesoUrl: string;
+  }): string {
+    return this.enlaceContrasenaPersonalTemplate(data);
   }
 }

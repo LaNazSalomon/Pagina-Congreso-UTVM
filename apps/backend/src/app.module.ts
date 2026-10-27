@@ -25,6 +25,7 @@ import { ComprobanteModule } from './comprobante/comprobante.module';
 import { ReconocimientoModule } from './reconocimiento/reconocimiento.module';
 import { HealthModule } from './health/health.module';
 import { HackatonModule } from './hackaton/hackaton.module';
+import { PersonalModule } from './personal/personal.module';
 
 @Module({
   imports: [
@@ -85,6 +86,7 @@ import { HackatonModule } from './hackaton/hackaton.module';
     DiaEventoModule,
     QrAccesoModule,
     LoginModule,
+    PersonalModule,
     InscripcionTallerModule,
     ForoEmpresarialModule,
     GestionContenidoModule,

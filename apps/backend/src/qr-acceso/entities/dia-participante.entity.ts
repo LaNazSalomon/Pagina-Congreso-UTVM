@@ -11,6 +11,7 @@ import {
 
 import { DiaEvento } from '../../dia-evento/entities/dia-evento.entity';
 import { ParticipanteAcceso } from '../../participante-acceso/entities/participante-acceso.entity';
+import { UsuarioPersonal } from '../../personal/entities/personal.entity';
 
 @Entity('dia_participante')
 @Check(
@@ -38,6 +39,13 @@ export class DiaParticipante {
 
   @Column({ type: 'timestamp', nullable: true })
   fecha_ingreso!: Date | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  validador_id!: string | null;
+
+  @ManyToOne(() => UsuarioPersonal, { nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'validador_id' })
+  validador!: UsuarioPersonal | null;
 
   @UpdateDateColumn({ type: 'timestamp', name: 'fecha_actualizacion' })
   fecha_actualizacion!: Date;

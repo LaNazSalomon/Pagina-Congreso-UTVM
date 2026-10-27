@@ -14,7 +14,6 @@ import { NoticiaResponseDto } from '../dto/noticia-response.dto';
 import { UpdateNoticiaDto } from '../dto/update-noticia.dto';
 import { NoticiaService } from '../services/noticia.service';
 
-// TODO: Restringir estos endpoints al administrador autenticado.
 @Controller('gestion-contenido/noticias')
 export class NoticiaController {
   constructor(private readonly service: NoticiaService) {}

@@ -347,6 +347,8 @@ export type ParticipanteUtvmPayload = Omit<
 >;
 
 export interface ParticipanteNsuDetalle {
+  congresoId?: string | null;
+  diaEventoIds?: string[] | null;
   id: string;
   es_tutor: boolean;
   correo_verificado: boolean;
@@ -372,6 +374,9 @@ export interface RegistroNsu {
 }
 
 export interface ParticipanteExterno {
+  congresoId?: string | null;
+  diaEventoIds?: string[] | null;
+  congreso?: { id: string; nombre: string } | null;
   id: string;
   nombre: string;
   apellidoPaterno: string;

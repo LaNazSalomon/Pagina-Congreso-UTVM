@@ -1,3 +1,4 @@
+import { AccesoPropio } from '../personal/acceso.decorator';
 import {
   Body,
   Controller,
@@ -14,6 +15,7 @@ import { InscripcionTallerService } from './services/inscripcion-taller.service'
 export class InscripcionTallerController {
   constructor(private readonly inscripciones: InscripcionTallerService) {}
 
+  @AccesoPropio({ tipoBody: 'tipoParticipante', idBody: 'referenciaId' })
   @Post()
   create(
     @Param('tallerId', ParseUUIDPipe) tallerId: string,

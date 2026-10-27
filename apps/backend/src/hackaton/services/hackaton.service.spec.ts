@@ -5,8 +5,8 @@ import { HackatonService } from './hackaton.service';
 describe('HackatonService date validation', () => {
   const service = new HackatonService({} as never, {} as never, {} as never);
   const congreso = {
-    fecha_inicio: new Date(2026, 7, 10),
-    fecha_fin: new Date(2026, 7, 12),
+    fecha_inicio: new Date('2026-08-10T00:00:00.000Z'),
+    fecha_fin: new Date('2026-08-12T23:59:59.999Z'),
   } as Congreso;
   const validate = (start: string, end: string) =>
     (

@@ -11,7 +11,12 @@
         </div>
 
         <div class="col-auto">
-          <q-btn flat label="Volver" text-color="white" @click="goToParticipantes" />
+          <q-btn
+            flat
+            label="Volver"
+            text-color="white"
+            @click="goToParticipantes"
+          />
         </div>
       </div>
     </section>
@@ -23,6 +28,37 @@
       </div>
 
       <q-form class="form-grid">
+        <q-select
+          v-model="congresoId"
+          :options="opcionesCongreso"
+          emit-value
+          map-options
+          outlined
+          label="Congreso y periodo de asistencia *"
+          class="light-input"
+          style="grid-column: 1 / -1"
+          :loading="cargandoDias"
+          :disable="guardando || cargandoDias || participantes.length > 0"
+          :hint="
+            participantes.length
+              ? 'Todos los participantes de este registro pertenecen al mismo congreso.'
+              : ''
+          "
+        />
+        <q-banner
+          v-if="errorDias"
+          class="bg-red-1 text-negative"
+          style="grid-column: 1 / -1"
+        >
+          {{ errorDias }}
+          <template #action
+            ><q-btn
+              flat
+              label="Reintentar"
+              :loading="cargandoDias"
+              @click="cargarDias"
+          /></template>
+        </q-banner>
         <q-input
           outlined
           v-model="form.nombre"
@@ -81,7 +117,7 @@
           />
         </div>
 
-        <div class="dark-box">
+        <div class="dark-box registro-fechas-box">
           <div class="box-label">Días de participación *</div>
 
           <div class="days-grid">
@@ -92,6 +128,7 @@
               :val="dia.value"
               :label="dia.label"
               color="primary"
+              :disable="cargandoDias || guardando"
               dark
             />
           </div>
@@ -100,7 +137,9 @@
         <div class="dark-box">
           <div class="box-label">Monto del participante</div>
           <div class="amount">${{ montoParticipanteActual.toFixed(2) }}</div>
-          <div class="box-help">Selecciona los días de participación</div>
+          <div class="box-help"
+            >${{ costoPorDia.toFixed(2) }} MXN por día seleccionado</div
+          >
         </div>
 
         <div class="add-participant-row">
@@ -110,6 +149,7 @@
             label="Agregar participante"
             class="btn-outline-green"
             @click="agregarParticipante"
+            :disable="cargandoDias || !!errorDias || !congresoId || guardando"
           />
         </div>
 
@@ -202,6 +242,7 @@
             outline
             icon="upload"
             label="Cargar archivo CSV"
+            :disable="cargandoDias || !!errorDias || !congresoId || guardando"
             class="btn-outline-green"
             @click="abrirCsv"
           />
@@ -210,6 +251,7 @@
             class="btn-primary-blue"
             icon="save"
             label="GUARDAR PARTICIPANTES"
+            :disable="cargandoDias || !!errorDias || !congresoId || guardando"
             @click="abrirResumenRegistro"
           />
         </div>
@@ -226,6 +268,9 @@
 
         <q-card-section class="modal-info">
           <div><strong>Participantes:</strong> {{ participantes.length }}</div>
+          <div
+            ><strong>Congreso:</strong> {{ congresoSeleccionado?.nombre }}</div
+          >
           <div><strong>Total:</strong> ${{ totalGeneral.toFixed(2) }}</div>
           <div><strong>Comprobante:</strong> {{ form.comprobante?.name }}</div>
         </q-card-section>
@@ -243,36 +288,44 @@
           />
         </q-card-section>
 
+        <q-card-actions align="right" class="modal-actions">
+          <q-btn flat label="Cancelar" class="btn-modal-cancel" v-close-popup />
 
-          <q-card-actions align="right" class="modal-actions">
-            <q-btn
-              flat
-              label="Cancelar"
-              class="btn-modal-cancel"
-              v-close-popup
-            />
-
-            <q-btn
-              class="btn-primary-blue"
-              icon="save"
-              label="Confirmar y guardar"
-              :loading="guardando"
-              @click="guardarParticipantes"
-            />
-          </q-card-actions>
-
+          <q-btn
+            class="btn-primary-blue"
+            icon="save"
+            label="Confirmar y guardar"
+            :loading="guardando"
+            @click="guardarParticipantes"
+          />
+        </q-card-actions>
       </q-card>
     </q-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useRouter } from 'vue-router';
+import { computed, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import { guardarRegistroNsu } from "../services/registroNsuService";
+import { isAxiosError } from "axios";
 import { Notify } from "quasar";
+import {
+  useDiasRegistro,
+  formatoDiasRegistro
+} from "../composables/useDiasRegistro";
 
 const router = useRouter();
+const {
+  congresoId,
+  congresoSeleccionado,
+  opcionesCongreso,
+  diasOptions,
+  costoPorDia,
+  cargandoDias,
+  errorDias,
+  cargarDias
+} = useDiasRegistro("NSU");
 
 const form = ref({
   nombre: "",
@@ -283,7 +336,7 @@ const form = ref({
   carrera: "",
   telefono: "",
   dias: [] as string[],
-  comprobante: null as File | null,
+  comprobante: null as File | null
 });
 
 interface Participante {
@@ -294,22 +347,19 @@ interface Participante {
   carrera: string;
   telefono: string;
   dias: string;
+  diaEventoIds: string[];
   monto: string;
   montoNumero: number;
 }
 
 const participantes = ref<Participante[]>([]);
 
-const diasOptions = [
-  { label: "Día 1", value: "Día 1" },
-  { label: "Día 2", value: "Día 2" },
-  { label: "Día 3", value: "Día 3" },
-];
-
-const costoPorDia = 250;
+watch(congresoId, () => {
+  form.value.dias = [];
+});
 
 const montoParticipanteActual = computed(() => {
-  return form.value.dias.length * costoPorDia;
+  return form.value.dias.length * costoPorDia.value;
 });
 
 const totalGeneral = computed(() => {
@@ -324,43 +374,49 @@ const columns = [
     name: "nombreCompleto",
     label: "Nombre completo",
     field: "nombreCompleto",
-    align: "left" as const,
+    align: "left" as const
   },
   {
     name: "correo",
     label: "Correo electrónico",
     field: "correo",
-    align: "left" as const,
+    align: "left" as const
   },
   {
     name: "institucion",
     label: "Institución",
     field: "institucion",
-    align: "left" as const,
+    align: "left" as const
   },
   {
     name: "carrera",
     label: "Carrera",
     field: "carrera",
-    align: "left" as const,
+    align: "left" as const
   },
   {
     name: "telefono",
     label: "Teléfono",
     field: "telefono",
-    align: "left" as const,
+    align: "left" as const
   },
-  { name: "dias", label: "Días", field: "dias", align: "left" as const },
+  {
+    name: "dias",
+    label: "Fechas de asistencia",
+    field: (row: Participante) => formatoDiasRegistro(row.dias),
+    align: "left" as const
+  },
   { name: "monto", label: "Monto", field: "monto", align: "left" as const },
   {
     name: "acciones",
     label: "Acciones",
     field: "acciones",
-    align: "center" as const,
-  },
+    align: "center" as const
+  }
 ];
 
 function agregarParticipante() {
+  if (!congresoId.value || cargandoDias.value || errorDias.value) return;
   const nombre = form.value.nombre.trim();
   const apellidoPaterno = form.value.apellidoPaterno.trim();
   const apellidoMaterno = form.value.apellidoMaterno.trim();
@@ -374,7 +430,7 @@ function agregarParticipante() {
     Notify.create({
       type: "warning",
       message: "El nombre es obligatorio.",
-      position: "top",
+      position: "top"
     });
     return;
   }
@@ -383,7 +439,7 @@ function agregarParticipante() {
     Notify.create({
       type: "warning",
       message: "El apellido paterno es obligatorio.",
-      position: "top",
+      position: "top"
     });
     return;
   }
@@ -392,7 +448,7 @@ function agregarParticipante() {
     Notify.create({
       type: "warning",
       message: "El correo electrónico es obligatorio.",
-      position: "top",
+      position: "top"
     });
     return;
   }
@@ -403,7 +459,7 @@ function agregarParticipante() {
     Notify.create({
       type: "warning",
       message: "Ingresa un correo electrónico válido.",
-      position: "top",
+      position: "top"
     });
     return;
   }
@@ -412,7 +468,7 @@ function agregarParticipante() {
     Notify.create({
       type: "warning",
       message: "La institución es obligatoria.",
-      position: "top",
+      position: "top"
     });
     return;
   }
@@ -421,7 +477,7 @@ function agregarParticipante() {
     Notify.create({
       type: "warning",
       message: "La carrera es obligatoria.",
-      position: "top",
+      position: "top"
     });
     return;
   }
@@ -430,7 +486,7 @@ function agregarParticipante() {
     Notify.create({
       type: "warning",
       message: "El teléfono es obligatorio.",
-      position: "top",
+      position: "top"
     });
     return;
   }
@@ -439,7 +495,7 @@ function agregarParticipante() {
     Notify.create({
       type: "warning",
       message: "El teléfono debe contener exactamente 10 dígitos.",
-      position: "top",
+      position: "top"
     });
     return;
   }
@@ -448,32 +504,27 @@ function agregarParticipante() {
     Notify.create({
       type: "warning",
       message: "Selecciona al menos un día de participación.",
-      position: "top",
+      position: "top"
     });
     return;
   }
 
   const correoDuplicado = participantes.value.some(
-    (participante) =>
-      participante.correo.trim().toLowerCase() === correo,
+    participante => participante.correo.trim().toLowerCase() === correo
   );
 
   if (correoDuplicado) {
     Notify.create({
       type: "warning",
       message: "Este correo ya fue agregado a la tabla.",
-      position: "top",
+      position: "top"
     });
     return;
   }
 
   const monto = montoParticipanteActual.value;
 
-  const nombreCompleto = [
-    nombre,
-    apellidoPaterno,
-    apellidoMaterno,
-  ]
+  const nombreCompleto = [nombre, apellidoPaterno, apellidoMaterno]
     .filter(Boolean)
     .join(" ");
 
@@ -484,9 +535,13 @@ function agregarParticipante() {
     institucion,
     carrera,
     telefono,
-    dias: dias.join(", "),
+    dias: diasOptions.value
+      .filter(dia => dias.includes(dia.value))
+      .map(dia => dia.fecha)
+      .join(","),
+    diaEventoIds: [...dias],
     monto: `$${monto.toFixed(2)}`,
-    montoNumero: monto,
+    montoNumero: monto
   });
 
   // Se conserva el comprobante que ya hubiera seleccionado.
@@ -501,13 +556,13 @@ function agregarParticipante() {
     carrera: "",
     telefono: "",
     dias: [],
-    comprobante: comprobanteActual,
+    comprobante: comprobanteActual
   };
 
   Notify.create({
     type: "positive",
     message: "Participante agregado correctamente.",
-    position: "top",
+    position: "top"
   });
 }
 const fileInput = ref();
@@ -528,52 +583,85 @@ function abrirCsv() {
 function leerCsv(file: File | null) {
   if (!file) return;
 
-  Papa.parse(file, {
+  Papa.parse<Record<string, string>>(file, {
     header: true,
     skipEmptyLines: true,
-    complete: (result) => {
-      const filas = result.data as any[];
+    complete: result => {
+      try {
+        if (result.errors.length)
+          throw new Error("Revisa el formato del archivo CSV.");
+        const filas = result.data;
 
-      const nuevosParticipantes: Participante[] = filas.map((fila, index) => {
-        const dias = fila.dias || "";
-        const monto = calcularMontoDesdeDias(dias);
+        const nuevosParticipantes: Participante[] = filas.map((fila, index) => {
+          const entradas = (fila.dias || "")
+            .split(",")
+            .map(dia => dia.trim())
+            .filter(Boolean);
+          if (!entradas.length)
+            throw new Error(
+              `Fila ${index + 1}: indica al menos una fecha de asistencia.`
+            );
+          const seleccion = entradas.map(entrada => {
+            const ordinal = entrada.match(/^d[ií]a[\s_]*(\d+)$/i);
+            const dia = ordinal
+              ? diasOptions.value[Number(ordinal[1]) - 1]
+              : diasOptions.value.find(
+                  dia => dia.fecha === entrada || dia.value === entrada
+                );
+            if (!dia)
+              throw new Error(
+                `Fila ${index + 1}: la fecha ${entrada} no pertenece al congreso seleccionado. Usa fechas AAAA-MM-DD.`
+              );
+            return dia;
+          });
+          if (
+            new Set(seleccion.map(dia => dia.value)).size !== seleccion.length
+          )
+            throw new Error(`Fila ${index + 1}: hay fechas repetidas.`);
+          const monto = seleccion.length * costoPorDia.value;
 
-        return {
-          id: participantes.value.length + index + 1,
-          nombreCompleto:
-            fila.nombreCompleto ||
-            `${fila.nombre || ""} ${fila.apellidoPaterno || ""} ${fila.apellidoMaterno || ""}`.trim(),
-          correo: fila.correo || "",
-          institucion: fila.institucion || "",
-          carrera: fila.carrera || "",
-          telefono: fila.telefono || "",
-          dias,
-          monto: `$${monto.toFixed(2)}`,
-          montoNumero: monto,
-        };
-      });
+          return {
+            id: participantes.value.length + index + 1,
+            nombreCompleto:
+              fila.nombreCompleto ||
+              `${fila.nombre || ""} ${fila.apellidoPaterno || ""} ${fila.apellidoMaterno || ""}`.trim(),
+            correo: fila.correo || "",
+            institucion: fila.institucion || "",
+            carrera: fila.carrera || "",
+            telefono: fila.telefono || "",
+            dias: seleccion.map(dia => dia.fecha).join(","),
+            diaEventoIds: seleccion.map(dia => dia.value),
+            monto: `$${monto.toFixed(2)}`,
+            montoNumero: monto
+          };
+        });
 
-      participantes.value.push(...nuevosParticipantes);
+        participantes.value.push(...nuevosParticipantes);
+      } catch (error) {
+        Notify.create({
+          type: "warning",
+          message:
+            error instanceof Error
+              ? error.message
+              : "No se pudo importar el CSV."
+        });
+      }
       archivoCsv.value = null;
-    },
+    }
   });
 }
-function calcularMontoDesdeDias(dias: string) {
-  if (!dias) return 0;
-
-  const cantidadDias = dias
-    .split(",")
-    .map((dia) => dia.trim())
-    .filter((dia) => dia !== "").length;
-
-  return cantidadDias * costoPorDia;
-}
 async function guardarParticipantes() {
-  guardando.value = true;
+  if (
+    guardando.value ||
+    !congresoId.value ||
+    cargandoDias.value ||
+    errorDias.value
+  )
+    return;
   if (participantes.value.length === 0) {
     Notify.create({
       type: "warning",
-      message: "Agrega al menos un participante antes de guardar.",
+      message: "Agrega al menos un participante antes de guardar."
     });
     return;
   }
@@ -581,25 +669,28 @@ async function guardarParticipantes() {
   if (!form.value.comprobante) {
     Notify.create({
       type: "warning",
-      message: "Debes cargar el comprobante de pago.",
+      message: "Debes cargar el comprobante de pago."
     });
     return;
   }
 
+  guardando.value = true;
   try {
-    const participantesPayload = participantes.value.map((participante) => ({
+    const participantesPayload = participantes.value.map(participante => ({
       nombreCompleto: participante.nombreCompleto,
       correo: participante.correo,
       institucion: participante.institucion,
       carrera: participante.carrera,
       telefono: participante.telefono,
       dias: participante.dias,
-      montoNumero: participante.montoNumero,
+      diaEventoIds: participante.diaEventoIds,
+      montoNumero: participante.montoNumero
     }));
 
     const respuesta = await guardarRegistroNsu(
       participantesPayload,
       form.value.comprobante,
+      congresoId.value
     );
 
     console.log("Registro guardado:", respuesta);
@@ -617,19 +708,24 @@ async function guardarParticipantes() {
       carrera: "",
       telefono: "",
       dias: [],
-      comprobante: null,
+      comprobante: null
     };
 
     Notify.create({
       type: "positive",
-      message: "Registro NSU guardado correctamente.",
+      message: "Registro NSU guardado correctamente."
     });
   } catch (error) {
     console.error("ERROR COMPLETO:", error);
-
+    mostrarResumenRegistro.value = false;
+    const detalle = isAxiosError<{ message?: string | string[] }>(error)
+      ? error.response?.data.message
+      : undefined;
     Notify.create({
       type: "negative",
-      message: "Ocurrió un error al guardar el registro.",
+      message: Array.isArray(detalle)
+        ? detalle.join(", ")
+        : detalle || "Ocurrió un error al guardar el registro."
     });
   } finally {
     guardando.value = false;
@@ -637,25 +733,25 @@ async function guardarParticipantes() {
 }
 function eliminarParticipante(id: number) {
   participantes.value = participantes.value
-    .filter((participante) => participante.id !== id)
+    .filter(participante => participante.id !== id)
     .map((participante, index) => ({
       ...participante,
-      id: index + 1,
+      id: index + 1
     }));
 
   Notify.create({
     type: "positive",
-    message: "Participante eliminado correctamente.",
+    message: "Participante eliminado correctamente."
   });
 }
 const mostrarResumenRegistro = ref(false);
 const guardando = ref(false);
-const columnsResumen = columns.filter((column) => column.name !== "acciones");
+const columnsResumen = columns.filter(column => column.name !== "acciones");
 function abrirResumenRegistro() {
   if (participantes.value.length === 0) {
     Notify.create({
       type: "warning",
-      message: "Agrega al menos un participante antes de guardar.",
+      message: "Agrega al menos un participante antes de guardar."
     });
     return;
   }
@@ -663,7 +759,7 @@ function abrirResumenRegistro() {
   if (!form.value.comprobante) {
     Notify.create({
       type: "warning",
-      message: "Debes cargar el comprobante de pago.",
+      message: "Debes cargar el comprobante de pago."
     });
     return;
   }
@@ -672,7 +768,7 @@ function abrirResumenRegistro() {
 }
 
 function goToParticipantes() {
-  void router.push('/participantes');
+  void router.push("/participantes");
 }
 </script>
 <style lang="scss">

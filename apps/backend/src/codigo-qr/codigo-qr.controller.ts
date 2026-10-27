@@ -3,7 +3,6 @@ import { Body, Controller, Param, ParseUUIDPipe, Patch } from '@nestjs/common';
 import { CodigoQrService } from './codigo-qr.service';
 import { RevocarCodigoQrDto } from './dto/revocar-codigo-qr.dto';
 
-// TODO: Agregar autenticacion y autorizacion administrativa.
 @Controller('codigo-qr')
 export class CodigoQrController {
   constructor(private readonly codigos: CodigoQrService) {}

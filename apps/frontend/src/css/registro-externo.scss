@@ -13,7 +13,7 @@
   --ext-color-danger: #ff5252;
   --ext-color-muted: #b7bec8;
 
-  --ext-font-main: 'Inter', sans-serif;
+  --ext-font-main: "Inter", sans-serif;
 }
 
 /* =========================================================
@@ -29,13 +29,21 @@
   overflow: hidden;
 
   background:
-    radial-gradient(circle at 75% 16%, rgba(0, 230, 118, 0.10), transparent 34%),
-    radial-gradient(circle at 12% 76%, rgba(0, 184, 107, 0.07), transparent 30%),
-    linear-gradient(135deg, var(--ext-color-bg) 0%, var(--ext-color-bg-dark) 100%);
+    radial-gradient(circle at 75% 16%, rgba(0, 230, 118, 0.1), transparent 34%),
+    radial-gradient(
+      circle at 12% 76%,
+      rgba(0, 184, 107, 0.07),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      var(--ext-color-bg) 0%,
+      var(--ext-color-bg-dark) 100%
+    );
 }
 
 .registro-externo-page::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   opacity: 0.14;
@@ -63,8 +71,7 @@
 
 .registro-externo-logo {
   object-fit: contain;
-  filter:
-    drop-shadow(0 0 16px rgba(0, 230, 118, 0.16))
+  filter: drop-shadow(0 0 16px rgba(0, 230, 118, 0.16))
     drop-shadow(0 14px 22px rgba(0, 0, 0, 0.22));
 }
 
@@ -98,9 +105,13 @@
   padding: 26px;
   border-radius: 28px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.035),
+      rgba(255, 255, 255, 0.015)
+    ),
     rgba(31, 42, 40, 0.62);
-  border: 1px solid rgba(102, 245, 181, 0.10);
+  border: 1px solid rgba(102, 245, 181, 0.1);
   box-shadow:
     0 24px 60px rgba(0, 0, 0, 0.26),
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
@@ -109,13 +120,13 @@
 }
 
 .registro-externo-card::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
   background:
-    linear-gradient(135deg, rgba(102, 245, 181, 0.10), transparent 35%),
+    linear-gradient(135deg, rgba(102, 245, 181, 0.1), transparent 35%),
     linear-gradient(315deg, rgba(0, 230, 118, 0.06), transparent 40%);
   pointer-events: none;
 
@@ -154,7 +165,11 @@
   place-items: center;
   border-radius: 14px;
   color: var(--ext-color-bg);
-  background: linear-gradient(135deg, var(--ext-color-success), var(--ext-color-primary));
+  background: linear-gradient(
+    135deg,
+    var(--ext-color-success),
+    var(--ext-color-primary)
+  );
   font-size: 26px;
   box-shadow: 0 14px 28px rgba(0, 230, 118, 0.16);
 }
@@ -176,8 +191,11 @@
    ========================================================= */
 
 .registro-externo-card .externo-light-input {
-  background:
-    linear-gradient(145deg, rgba(14, 27, 24, 0.72), rgba(7, 30, 27, 0.78));
+  background: linear-gradient(
+    145deg,
+    rgba(14, 27, 24, 0.72),
+    rgba(7, 30, 27, 0.78)
+  );
   border-radius: 16px;
   transition:
     transform 0.22s ease,
@@ -210,12 +228,16 @@
   border-color: rgba(102, 245, 181, 0.18) !important;
 }
 
-.registro-externo-card .externo-light-input.q-field--focused .q-field__control::before {
+.registro-externo-card
+  .externo-light-input.q-field--focused
+  .q-field__control::before {
   border-color: rgba(102, 245, 181, 0.24) !important;
   box-shadow: 0 0 0 2px rgba(102, 245, 181, 0.06);
 }
 
-.registro-externo-card .externo-light-input.q-field--focused .q-field__control::after {
+.registro-externo-card
+  .externo-light-input.q-field--focused
+  .q-field__control::after {
   opacity: 1;
 }
 
@@ -287,9 +309,13 @@
   padding: 18px;
   border-radius: 20px;
   background:
-    radial-gradient(circle at 85% 15%, rgba(102, 245, 181, 0.04), transparent 38%),
+    radial-gradient(
+      circle at 85% 15%,
+      rgba(102, 245, 181, 0.04),
+      transparent 38%
+    ),
     linear-gradient(145deg, rgba(20, 34, 31, 0.68), rgba(7, 30, 27, 0.76));
-  border: 1px solid rgba(102, 245, 181, 0.10);
+  border: 1px solid rgba(102, 245, 181, 0.1);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
@@ -325,9 +351,13 @@
    DÍAS
    ========================================================= */
 
+.registro-externo-card .externo-days-box {
+  grid-column: span 2;
+}
+
 .registro-externo-card .externo-days-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 11px;
 }
 
@@ -335,7 +365,7 @@
   min-height: 46px;
   padding: 10px 12px;
   border-radius: 15px;
-  border: 1px solid rgba(102, 245, 181, 0.10);
+  border: 1px solid rgba(102, 245, 181, 0.1);
   background: rgba(255, 255, 255, 0.025);
   transition:
     background 0.22s ease,
@@ -369,9 +399,13 @@
   padding: 18px;
   border-radius: 22px;
   background:
-    linear-gradient(135deg, rgba(102, 245, 181, 0.04), rgba(255, 255, 255, 0.015)),
+    linear-gradient(
+      135deg,
+      rgba(102, 245, 181, 0.04),
+      rgba(255, 255, 255, 0.015)
+    ),
     rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(102, 245, 181, 0.10);
+  border: 1px solid rgba(102, 245, 181, 0.1);
 }
 
 .registro-externo-card .externo-file-input {
@@ -391,14 +425,14 @@
 .registro-externo-card .externo-file-input:hover,
 .registro-externo-card .externo-file-input.is-dragging {
   background: rgba(0, 230, 118, 0.055);
-  border-color: rgba(102, 245, 181, 0.50);
+  border-color: rgba(102, 245, 181, 0.5);
   box-shadow: 0 0 22px rgba(0, 230, 118, 0.07);
   transform: translateY(-1px);
 }
 
 .registro-externo-card .externo-file-input.has-file {
   background: rgba(0, 230, 118, 0.065);
-  border-color: rgba(102, 245, 181, 0.60);
+  border-color: rgba(102, 245, 181, 0.6);
 }
 
 .registro-externo-card .externo-upload-layout {
@@ -416,7 +450,7 @@
 
 .registro-externo-card .externo-upload-left .q-icon {
   color: var(--ext-color-success);
-  filter: drop-shadow(0 0 10px rgba(0, 230, 118, 0.20));
+  filter: drop-shadow(0 0 10px rgba(0, 230, 118, 0.2));
 }
 
 .registro-externo-card .externo-upload-text {
@@ -460,7 +494,7 @@
 
 .registro-externo-card .externo-btn-outline:hover {
   background: rgba(102, 245, 181, 0.08) !important;
-  border-color: rgba(102, 245, 181, 0.40) !important;
+  border-color: rgba(102, 245, 181, 0.4) !important;
   transform: translateY(-1px);
 }
 
@@ -475,7 +509,11 @@
   min-height: 52px;
   padding: 0 30px;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--ext-color-success) 0%, var(--ext-color-primary) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    var(--ext-color-success) 0%,
+    var(--ext-color-primary) 100%
+  ) !important;
   color: var(--ext-color-bg) !important;
   border: 1px solid rgba(102, 245, 181, 0.58) !important;
   font-weight: 900;
@@ -496,7 +534,7 @@
 .registro-externo-card .btn-registro:hover {
   transform: translateY(-2px);
   box-shadow:
-    0 22px 44px rgba(0, 230, 118, 0.20),
+    0 22px 44px rgba(0, 230, 118, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.34);
   filter: saturate(1.05);
 }
@@ -524,7 +562,11 @@
 
 .resumen-externo-card {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.025)),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.025)
+    ),
     rgba(31, 42, 40, 0.94) !important;
   border: 1px solid rgba(102, 245, 181, 0.16);
   border-radius: 24px !important;
@@ -536,15 +578,22 @@
 
 .resumen-externo-card .dialog-header {
   background:
-    linear-gradient(135deg, rgba(102, 245, 181, 0.075), rgba(255, 255, 255, 0.025)),
+    linear-gradient(
+      135deg,
+      rgba(102, 245, 181, 0.075),
+      rgba(255, 255, 255, 0.025)
+    ),
     rgba(7, 30, 27, 0.88) !important;
   color: var(--ext-color-white) !important;
   border-bottom: 1px solid rgba(102, 245, 181, 0.12);
 }
 
 .resumen-externo-card .dialog-header-warning {
-  background:
-    linear-gradient(90deg, rgba(255, 213, 79, 0.18), rgba(60, 42, 5, 0.88)) !important;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 213, 79, 0.18),
+    rgba(60, 42, 5, 0.88)
+  ) !important;
 }
 
 .resumen-externo-card .q-card__section {
@@ -553,7 +602,7 @@
 
 .resumen-externo-card .text-grey-7,
 .resumen-externo-card .text-caption {
-  color: rgba(255, 255, 255, 0.60) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
 }
 
 .resumen-externo-card .q-icon {
@@ -608,7 +657,7 @@
 .resumen-externo-card .q-card__actions {
   padding: 16px 22px 20px;
   background: rgba(3, 20, 17, 0.72);
-  border-top: 1px solid rgba(102, 245, 181, 0.10);
+  border-top: 1px solid rgba(102, 245, 181, 0.1);
 }
 
 .resumen-externo-card .dialog-btn-flat {
@@ -620,7 +669,11 @@
   min-height: 42px;
   padding: 0 20px;
   border-radius: 14px;
-  background: linear-gradient(135deg, var(--ext-color-success) 0%, var(--ext-color-primary) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    var(--ext-color-success) 0%,
+    var(--ext-color-primary) 100%
+  ) !important;
   color: var(--ext-color-bg) !important;
   font-weight: 900;
 }
@@ -640,6 +693,9 @@
 }
 
 @media (max-width: 700px) {
+  .registro-externo-card .externo-days-box {
+    grid-column: 1 / -1;
+  }
   .registro-externo-page {
     padding: 22px 14px;
   }

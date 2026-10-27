@@ -669,10 +669,22 @@
               dense
             />
             <q-select
+              v-model="congresoId"
+              class="col-12"
+              :options="opcionesCongreso"
+              label="Congreso"
+              emit-value
+              map-options
+              outlined
+              dense
+              :loading="cargandoDias"
+              :disable="!!editingExternoId || saving"
+            />
+            <q-select
               v-model="externoForm.dias"
               class="col-12 col-md-6"
               :options="diasOptions"
-              label="Días"
+              label="Fechas de asistencia"
               multiple
               emit-value
               map-options
@@ -682,7 +694,8 @@
             <q-input
               v-model.number="externoForm.total"
               class="col-12 col-md-3"
-              label="Total"
+              label="Total calculado"
+              readonly
               type="number"
               min="0"
               outlined
@@ -733,7 +746,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch, nextTick } from "vue";
 import { useQuasar, type QTableColumn } from "quasar";
 import { useRouter } from "vue-router";
 import { api } from "../../services/api";
@@ -741,6 +754,11 @@ import { abrirComprobante } from "../../services/comprobanteService";
 import { getQrApiError, qrAccessService } from "../../services/qrAccessService";
 import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
 import { useParticipantesAdmin } from "../../composables/useParticipantesAdmin";
+import {
+  useDiasRegistro,
+  formatoDiasRegistro,
+  type DiaRegistro
+} from "../../composables/useDiasRegistro";
 import type { QrParticipantType } from "../../types/qr-access";
 import type {
   ParticipanteEms,
@@ -756,6 +774,16 @@ import type {
 const $q = useQuasar();
 const { confirmDelete } = useDeleteConfirmation();
 const router = useRouter();
+const {
+  congresos,
+  congresoId,
+  opcionesCongreso,
+  diasOptions,
+  costoPorDia,
+  cargandoDias,
+  errorDias
+} = useDiasRegistro("EXTERNO");
+let preparandoExterno = false;
 const tab = ref("ems");
 const saving = ref(false);
 const emsDialogOpen = ref(false);
@@ -826,11 +854,17 @@ const emsForm = reactive<ParticipanteEmsPayload>(emptyEmsForm());
 const utvmForm = reactive<ParticipanteUtvmPayload>(emptyUtvmForm());
 const externoForm = reactive<ParticipanteExternoPayload>(emptyExternoForm());
 
-const diasOptions = [
-  { label: "Día 1", value: "dia_1" },
-  { label: "Día 2", value: "dia_2" },
-  { label: "Día 3", value: "dia_3" }
-];
+watch(congresoId, () => {
+  if (!preparandoExterno) externoForm.dias = [];
+});
+watch(
+  () => externoForm.dias,
+  () => {
+    if (!preparandoExterno)
+      externoForm.total = externoForm.dias.length * costoPorDia.value;
+  },
+  { deep: true }
+);
 
 const externoStatusOptions = [
   { label: "Pendiente", value: "pendiente" },
@@ -950,7 +984,7 @@ const externosColumns: QTableColumn[] = [
   {
     name: "dias",
     label: "Días",
-    field: (row: ParticipanteExterno) => row.dias.join(", "),
+    field: (row: ParticipanteExterno) => formatoDiasRegistro(row.dias),
     align: "left"
   },
   {
@@ -1198,27 +1232,62 @@ async function deleteUtvm(id: number) {
   );
 }
 
-function openExternoDialog(row?: ParticipanteExterno) {
-  editingExternoId.value = row?.id ?? null;
-  externoComprobante.value = null;
-  resetReactive(
-    externoForm,
-    row
-      ? {
-          nombre: row.nombre,
-          apellidoPaterno: row.apellidoPaterno,
-          apellidoMaterno: row.apellidoMaterno,
-          correo: row.correo,
-          telefono: row.telefono,
-          institucion: row.institucion,
-          dias: [...row.dias],
-          total: Number(row.total),
-          correoVerificado: row.correoVerificado,
-          status: row.status
-        }
-      : emptyExternoForm()
-  );
-  externoDialogOpen.value = true;
+async function openExternoDialog(row?: ParticipanteExterno) {
+  preparandoExterno = true;
+  try {
+    if (row?.congresoId) {
+      if (!congresos.value.some(item => item.id === row.congresoId)) {
+        const { data } = await api.get<DiaRegistro[]>(
+          `congresos/${row.congresoId}/dias-evento`
+        );
+        congresos.value.push({
+          id: row.congresoId,
+          nombre: row.congreso?.nombre ?? "Congreso del registro",
+          fechaInicio: data[0]?.fechaEvento ?? "",
+          fechaFin: data.at(-1)?.fechaEvento ?? "",
+          dias: data
+        });
+      }
+      congresoId.value = row.congresoId;
+    }
+    await nextTick();
+    editingExternoId.value = row?.id ?? null;
+    externoComprobante.value = null;
+    resetReactive(
+      externoForm,
+      row
+        ? {
+            nombre: row.nombre,
+            apellidoPaterno: row.apellidoPaterno,
+            apellidoMaterno: row.apellidoMaterno,
+            correo: row.correo,
+            telefono: row.telefono,
+            institucion: row.institucion,
+            dias:
+              row.diaEventoIds ??
+              diasOptions.value
+                .filter((dia, index) =>
+                  row.dias.some(
+                    value =>
+                      value === dia.fecha ||
+                      value.match(/^d[ií]a[\s_]*(\d+)$/i)?.[1] ===
+                        String(index + 1)
+                  )
+                )
+                .map(dia => dia.value),
+            total: Number(row.total),
+            correoVerificado: row.correoVerificado,
+            status: row.status
+          }
+        : emptyExternoForm()
+    );
+    externoDialogOpen.value = true;
+    await nextTick();
+  } catch {
+    notify("negative", "No se pudieron cargar las fechas del registro.");
+  } finally {
+    preparandoExterno = false;
+  }
 }
 
 async function saveExterno() {
@@ -1226,6 +1295,18 @@ async function saveExterno() {
 
   saving.value = true;
   try {
+    if (
+      !congresoId.value ||
+      !externoForm.dias.length ||
+      cargandoDias.value ||
+      errorDias.value
+    ) {
+      notify("warning", "Selecciona un congreso y sus fechas de asistencia.");
+      return;
+    }
+    const fechas = diasOptions.value
+      .filter(dia => externoForm.dias.includes(dia.value))
+      .map(dia => dia.fecha);
     if (editingExternoId.value) {
       await updateExterno(editingExternoId.value, {
         nombre: externoForm.nombre.trim(),
@@ -1234,7 +1315,9 @@ async function saveExterno() {
         correo: externoForm.correo.trim(),
         telefono: externoForm.telefono.trim(),
         institucion: externoForm.institucion?.trim() || null,
-        dias: [...externoForm.dias],
+        congresoId: congresoId.value,
+        diaEventoIds: [...externoForm.dias],
+        dias: fechas,
         total: Number(externoForm.total),
         status: externoForm.status
       });
@@ -1245,13 +1328,15 @@ async function saveExterno() {
       }
 
       const formData = new FormData();
+      formData.append("congresoId", congresoId.value);
+      formData.append("diaEventoIds", JSON.stringify(externoForm.dias));
       formData.append("nombre", externoForm.nombre);
       formData.append("apellidoPaterno", externoForm.apellidoPaterno);
       formData.append("apellidoMaterno", externoForm.apellidoMaterno ?? "");
       formData.append("correo", externoForm.correo);
       formData.append("telefono", externoForm.telefono);
       formData.append("institucion", externoForm.institucion ?? "");
-      formData.append("dias", JSON.stringify(externoForm.dias));
+      formData.append("dias", JSON.stringify(fechas));
       formData.append("total", String(externoForm.total));
       formData.append("comprobante", externoComprobante.value);
       await api.post("externos", formData, {

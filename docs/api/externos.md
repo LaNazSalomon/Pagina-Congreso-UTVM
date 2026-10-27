@@ -11,13 +11,15 @@ Los endpoints de registro usan `multipart/form-data` porque incluyen la subida d
 
 | Campo | Tipo | Requerido | Reglas |
 | --- | --- | --- | --- |
+| `congresoId` | UUID | Si | Congreso al que pertenece el registro |
+| `diaEventoIds` | UUID[] | Si | IDs únicos de fechas de ese congreso |
 | `nombre` | string | Si | No puede estar vacio |
 | `apellidoPaterno` | string | Si | No puede estar vacio |
 | `apellidoMaterno` | string | No | Opcional, puede ser null |
 | `correo` | string | Si | Debe ser email valido, unico |
 | `telefono` | string | Si | No puede estar vacio |
 | `institucion` | string | No | Opcional, puede ser null |
-| `dias` | string[] | Si | Arreglo de dias |
+| `dias` | string[] | Si | Fechas ISO; el servidor guarda las fechas canónicas de los IDs |
 | `total` | number | Si | Monto a pagar |
 | `comprobante` | file | Si | PDF, JPG, JPEG o PNG validos, max 5MB |
 
@@ -48,6 +50,13 @@ Respuesta: `302 Redirect` al frontend con parametro `?registro=verificado` o `?r
 
 Registra un participante externo con comprobante de pago.
 
+Obtener primero el congreso y sus fechas con
+`GET /congresos/opciones-registro`. Ver [registro por fechas](registro-fechas.md).
+
+Si el correo ya tiene un registro pendiente de verificación, reenvía el enlace
+usando el registro original. No modifica sus datos ni vuelve a guardar el
+comprobante adjuntado. Los registros con correo verificado responden `409`.
+
 ```http
 POST {{base_url}}/externos
 Content-Type: multipart/form-data
@@ -71,11 +80,13 @@ Ejemplo con curl:
 
 ```bash
 curl -X POST http://localhost:3000/api/externos \
+  -F "congresoId={{congreso_id}}" \
+  -F 'diaEventoIds=["{{dia_evento_1_id}}","{{dia_evento_2_id}}"]' \
   -F "nombre=Roberto" \
   -F "apellidoPaterno=Sanchez" \
   -F "correo=roberto.sanchez@correo.com" \
   -F "telefono=8112345678" \
-  -F "dias=[\"dia1\",\"dia2\"]" \
+  -F 'dias=["2026-10-23","2026-10-24"]' \
   -F "total=500" \
   -F "comprobante=@comprobante.pdf"
 ```
@@ -95,6 +106,13 @@ Errores posibles:
 - `400 Bad Request` — campos faltantes o archivo no adjuntado.
 - `400 Bad Request` — formato de archivo no valido (solo PDF, JPG, PNG).
 - `400 Bad Request` — archivo supera 5MB.
+- `409 Conflict` — el correo ya tiene un registro que no está pendiente de verificación.
+- `503 Service Unavailable` — el registro quedó guardado, pero no se pudo enviar
+  el correo de verificación. Repetir la solicitud con el mismo correo reintenta
+  el envío sin duplicar el registro ni el comprobante. Revisar la configuración
+  `MAIL_HOST`, `MAIL_PORT`, `MAIL_SECURE`, `MAIL_USER`, `MAIL_PASS` y `MAIL_FROM`
+  y los logs del backend si el error persiste. La configuración SMTP incompleta
+  también devuelve este error; no se informa un envío exitoso.
 
 ---
 

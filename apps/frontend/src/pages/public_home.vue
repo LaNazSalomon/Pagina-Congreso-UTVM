@@ -970,6 +970,7 @@ function formatearFechaCorta(fecha: string) {
   return new Intl.DateTimeFormat('es-MX', {
     day: '2-digit',
     month: 'short',
+    timeZone: 'UTC',
   }).format(date);
 }
 

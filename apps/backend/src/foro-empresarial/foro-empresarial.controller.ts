@@ -1,3 +1,4 @@
+import { Publico } from '../personal/acceso.decorator';
 import {
   Body,
   Controller,
@@ -25,11 +26,13 @@ export class ForoEmpresarialController {
     return this.service.create(dto);
   }
 
+  @Publico()
   @Get()
   findAll(): Promise<ForoEmpresarialResponseDto[]> {
     return this.service.findAll();
   }
 
+  @Publico()
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,

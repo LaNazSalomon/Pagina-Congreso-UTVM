@@ -1,3 +1,4 @@
+import { AccesoPropio, Publico } from '../personal/acceso.decorator';
 import {
   Body,
   Controller,
@@ -5,6 +6,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  ParseArrayPipe,
   Patch,
   Post,
 } from '@nestjs/common';
@@ -18,13 +20,24 @@ import { EnviarQrAccesoDto } from '../participante-qr/dto/enviar-qr-acceso.dto';
 export class UtvmController {
   constructor(private readonly utvmService: UtvmService) {}
 
+  @Publico()
   @Post()
   create(@Body() createUtvmDto: CreateUtvmDto) {
     return this.utvmService.create(createUtvmDto);
   }
 
+  @Publico()
   @Post('multiple')
-  createMany(@Body() participantes: CreateUtvmDto[]) {
+  createMany(
+    @Body(
+      new ParseArrayPipe({
+        items: CreateUtvmDto,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
+    )
+    participantes: CreateUtvmDto[],
+  ) {
     return this.utvmService.createMany(participantes);
   }
 
@@ -36,6 +49,7 @@ export class UtvmController {
     return this.utvmService.enviarQrAcceso(id, dto);
   }
 
+  @AccesoPropio({ tipo: 'UTVM', idParam: 'id' })
   @Post(':id/qr-acceso/enviar-automatico')
   enviarQrAccesoAutomatico(@Param('id', ParseIntPipe) id: number) {
     return this.utvmService.enviarQrAccesoAutomatico(id);

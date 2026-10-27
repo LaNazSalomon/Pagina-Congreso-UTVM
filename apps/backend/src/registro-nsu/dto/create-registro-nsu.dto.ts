@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsString,
+  IsUUID,
   Length,
   Matches,
   Max,
@@ -17,6 +18,10 @@ import { POSTGRES_NUMERIC_10_2_MAX } from '../../common/database/postgres-limits
 import { UploadedFile } from '../types/uploaded-file.type';
 
 export class CreateParticipanteNsuDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsUUID('4', { each: true })
+  diaEventoIds!: string[];
   @IsString()
   @IsNotEmpty({ message: 'El nombre completo es obligatorio' })
   @MaxLength(200)
@@ -44,7 +49,6 @@ export class CreateParticipanteNsuDto {
 
   @IsString()
   @IsNotEmpty({ message: 'Debes seleccionar al menos un día' })
-  @MaxLength(100)
   dias!: string;
 
   @Type(() => Number)
@@ -57,6 +61,9 @@ export class CreateParticipanteNsuDto {
 }
 
 export class CreateRegistroNsuDto {
+  @IsUUID('4')
+  congresoId!: string;
+
   @IsArray({ message: 'Los participantes deben enviarse como arreglo' })
   @ArrayMinSize(1, {
     message: 'Debe registrar al menos un participante',

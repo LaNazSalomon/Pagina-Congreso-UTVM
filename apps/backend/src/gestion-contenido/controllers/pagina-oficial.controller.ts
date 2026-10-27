@@ -1,3 +1,4 @@
+import { Publico } from '../../personal/acceso.decorator';
 import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
 
 import {
@@ -6,6 +7,7 @@ import {
 } from '../dto/pagina-oficial-response.dto';
 import { PaginaOficialService } from '../services/pagina-oficial.service';
 
+@Publico()
 @Controller('pagina-oficial')
 export class PaginaOficialController {
   constructor(private readonly service: PaginaOficialService) {}

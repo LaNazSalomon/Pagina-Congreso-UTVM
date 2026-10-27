@@ -30,7 +30,7 @@
           <q-btn
             v-for="item in publicLinks"
             :key="item.label"
-            :ref="(el) => setNavItemRef(el, item.to)"
+            :ref="el => setNavItemRef(el, item.to)"
             flat
             no-caps
             :to="item.to"
@@ -40,7 +40,7 @@
             :class="{
               'nav-btn-active': isActive(item.to),
               'nav-btn-cta': item.variant === 'cta',
-              'nav-btn-admin': item.variant === 'admin',
+              'nav-btn-admin': item.variant === 'admin'
             }"
           />
 
@@ -62,7 +62,7 @@
             icon="login"
             class="nav-btn nav-btn-session"
             :class="{
-              'nav-btn-active': isActive('/login'),
+              'nav-btn-active': isActive('/login')
             }"
           />
 
@@ -115,7 +115,7 @@
           :class="{
             'drawer-item-active': isActive(item.to),
             'drawer-item-cta': item.variant === 'cta',
-            'drawer-item-admin': item.variant === 'admin',
+            'drawer-item-admin': item.variant === 'admin'
           }"
           @click="menuOpen = false"
         >
@@ -158,7 +158,7 @@
           to="/login"
           class="drawer-item drawer-item-session"
           :class="{
-            'drawer-item-active': isActive('/login'),
+            'drawer-item-active': isActive('/login')
           }"
           @click="menuOpen = false"
         >
@@ -240,18 +240,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import type { ComponentPublicInstance, CSSProperties } from 'vue';
-import { useQuasar } from 'quasar';
-import { useRoute, useRouter } from 'vue-router';
-import CentroAyuda from '@/components/centroAyuda.vue';
-import { api } from '@/services/api';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch
+} from "vue";
+import type { ComponentPublicInstance, CSSProperties } from "vue";
+import { useQuasar } from "quasar";
+import { useRoute, useRouter } from "vue-router";
+import CentroAyuda from "@/components/centroAyuda.vue";
+import { api } from "@/services/api";
+import { salirParticipante } from "@/services/participanteSessionService";
 
 interface PublicLink {
   label: string;
   to: string;
   icon: string;
-  variant?: 'normal' | 'cta' | 'admin';
+  variant?: "normal" | "cta" | "admin";
 }
 
 interface ApiListResponse<T> {
@@ -282,9 +290,9 @@ const navItems = new Map<string, HTMLElement>();
 let indicatorFrame = 0;
 
 const indicatorStyle = ref<CSSProperties>({
-  width: '0px',
-  transform: 'translate3d(0, 0, 0)',
-  opacity: '0',
+  width: "0px",
+  transform: "translate3d(0, 0, 0)",
+  opacity: "0"
 });
 
 const congresoActivo = computed<CongresoPublico | null>(() => {
@@ -292,12 +300,14 @@ const congresoActivo = computed<CongresoPublico | null>(() => {
     return null;
   }
 
-  return [...congresos.value].sort((a, b) => {
-    const fechaA = obtenerFechaInicioCongreso(a);
-    const fechaB = obtenerFechaInicioCongreso(b);
+  return (
+    [...congresos.value].sort((a, b) => {
+      const fechaA = obtenerFechaInicioCongreso(a);
+      const fechaB = obtenerFechaInicioCongreso(b);
 
-    return new Date(fechaB).getTime() - new Date(fechaA).getTime();
-  })[0] ?? null;
+      return new Date(fechaB).getTime() - new Date(fechaA).getTime();
+    })[0] ?? null
+  );
 });
 
 const anioCongreso = computed(() => {
@@ -310,13 +320,13 @@ const anioCongreso = computed(() => {
 
   const fechaInicio = congresoActivo.value
     ? obtenerFechaInicioCongreso(congresoActivo.value)
-    : '';
+    : "";
 
   if (fechaInicio) {
     return String(new Date(fechaInicio).getFullYear());
   }
 
-  return '2026';
+  return "2026";
 });
 
 const tituloMenuCongreso = computed(() => {
@@ -325,41 +335,47 @@ const tituloMenuCongreso = computed(() => {
 
 const publicLinks: PublicLink[] = [
   {
-    label: 'Inicio',
-    to: '/',
-    icon: 'home',
+    label: "Personal",
+    to: "/personal/acceso",
+    icon: "badge",
+    variant: "admin"
   },
   {
-    label: 'Panelistas',
-    to: '/panelistas_u',
-    icon: 'groups',
+    label: "Inicio",
+    to: "/",
+    icon: "home"
   },
   {
-    label: 'Agenda',
-    to: '/agenda',
-    icon: 'calendar_month',
+    label: "Panelistas",
+    to: "/panelistas_u",
+    icon: "groups"
   },
   {
-    label: 'Conferencias',
-    to: '/conferencias_u',
-    icon: 'mic',
+    label: "Agenda",
+    to: "/agenda",
+    icon: "calendar_month"
   },
   {
-    label: 'Talleres',
-    to: '/talleres_u',
-    icon: 'construction',
+    label: "Conferencias",
+    to: "/conferencias_u",
+    icon: "mic"
   },
   {
-    label: 'Registro Externo',
-    to: '/registro-externo',
-    icon: 'how_to_reg',
-    variant: 'cta',
+    label: "Talleres",
+    to: "/talleres_u",
+    icon: "construction"
   },
   {
-    label: 'Mi QR',
-    to: '/mi-qr',
-    icon: 'qr_code_2',
+    label: "Registro Externo",
+    to: "/registro-externo",
+    icon: "how_to_reg",
+    variant: "cta"
   },
+  {
+    label: "Mi QR",
+    to: "/mi-qr",
+    icon: "qr_code_2"
+  }
 ];
 
 const handleResize = () => {
@@ -374,13 +390,13 @@ onMounted(() => {
     scheduleIndicatorUpdate();
   });
 
-  window.addEventListener('resize', handleResize, {
-    passive: true,
+  window.addEventListener("resize", handleResize, {
+    passive: true
   });
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize);
+  window.removeEventListener("resize", handleResize);
 
   if (indicatorFrame) {
     cancelAnimationFrame(indicatorFrame);
@@ -393,16 +409,18 @@ watch(
     cargarSesion();
     await nextTick();
     scheduleIndicatorUpdate();
-  },
+  }
 );
 
 async function cargarCongresos() {
   try {
-    const response = await api.get<CongresoPublico[] | ApiListResponse<CongresoPublico>>('congreso');
+    const response = await api.get<
+      CongresoPublico[] | ApiListResponse<CongresoPublico>
+    >("congreso");
     congresos.value = extraerLista(response.data);
   } catch (error) {
     congresos.value = [];
-    console.error('No se pudo cargar el congreso público:', error);
+    console.error("No se pudo cargar el congreso público:", error);
   }
 }
 
@@ -419,18 +437,20 @@ function extraerLista<T>(respuesta: T[] | ApiListResponse<T>): T[] {
 }
 
 function cargarSesion() {
-  const participanteGuardado = localStorage.getItem('participante');
-  const tipoGuardado = localStorage.getItem('tipoParticipante');
+  const participanteGuardado = localStorage.getItem("participante");
+  const tipoGuardado = localStorage.getItem("tipoParticipante");
 
   sesionActiva.value = Boolean(participanteGuardado && tipoGuardado);
 }
 
 function obtenerNombreCongreso(congreso: CongresoPublico | null) {
-  return congreso?.nombre?.trim() || congreso?.titulo?.trim() || 'Congreso UTVM';
+  return (
+    congreso?.nombre?.trim() || congreso?.titulo?.trim() || "Congreso UTVM"
+  );
 }
 
 function obtenerFechaInicioCongreso(congreso: CongresoPublico) {
-  return congreso.fechaInicio || congreso.fecha_inicio || '';
+  return congreso.fechaInicio || congreso.fecha_inicio || "";
 }
 
 function abrirCentroAyuda() {
@@ -444,26 +464,35 @@ function pedirConfirmacionCerrarSesion() {
 }
 
 async function cerrarSesion() {
-  localStorage.removeItem('participante');
-  localStorage.removeItem('tipoParticipante');
-  localStorage.removeItem('correoParticipante');
+  try {
+    await salirParticipante();
+  } catch {
+    $q.notify({
+      type: "negative",
+      message: "No se pudo cerrar la sesión. Intenta de nuevo."
+    });
+    return;
+  }
+  localStorage.removeItem("participante");
+  localStorage.removeItem("tipoParticipante");
+  localStorage.removeItem("correoParticipante");
 
   sesionActiva.value = false;
   menuOpen.value = false;
   confirmLogout.value = false;
 
   $q.notify({
-    type: 'positive',
-    message: 'Sesión cerrada correctamente.',
-    position: 'top',
+    type: "positive",
+    message: "Sesión cerrada correctamente.",
+    position: "top"
   });
 
-  await router.push('/');
+  await router.push("/");
 }
 
 function isActive(path: string) {
-  if (path === '/') {
-    return route.path === '/';
+  if (path === "/") {
+    return route.path === "/";
   }
 
   return route.path === path || route.path.startsWith(`${path}/`);
@@ -471,19 +500,19 @@ function isActive(path: string) {
 
 function setNavItemRef(
   el: Element | ComponentPublicInstance | null,
-  path: string,
+  path: string
 ) {
   if (!el) {
     navItems.delete(path);
     return;
   }
 
-  const element = '$el' in el ? (el.$el as HTMLElement) : (el as HTMLElement);
+  const element = "$el" in el ? (el.$el as HTMLElement) : (el as HTMLElement);
   navItems.set(path, element);
 }
 
 function getActivePath() {
-  return publicLinks.find((item) => isActive(item.to))?.to || '/';
+  return publicLinks.find(item => isActive(item.to))?.to || "/";
 }
 
 function scheduleIndicatorUpdate() {
@@ -514,7 +543,7 @@ function updateIndicator() {
   indicatorStyle.value = {
     width: `${width}px`,
     transform: `translate3d(${left}px, 0, 0)`,
-    opacity: '1',
+    opacity: "1"
   };
 }
 </script>

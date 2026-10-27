@@ -6,7 +6,8 @@
           <h1>Registro de Participantes Externos</h1>
 
           <p>
-            Completa tus datos, selecciona tus días de participación y adjunta tu comprobante de pago.
+            Completa tus datos, selecciona tus días de participación y adjunta
+            tu comprobante de pago.
           </p>
         </div>
       </div>
@@ -23,6 +24,33 @@
         class="externo-form-grid"
         @submit.prevent="registrar"
       >
+        <q-select
+          v-model="congresoId"
+          :options="opcionesCongreso"
+          emit-value
+          map-options
+          label="Congreso y periodo de asistencia *"
+          outlined
+          dense
+          class="externo-light-input"
+          style="grid-column: 1 / -1"
+          :loading="cargandoDias"
+          :disable="cargando || cargandoDias"
+        />
+        <q-banner
+          v-if="errorDias"
+          class="bg-red-1 text-negative"
+          style="grid-column: 1 / -1"
+        >
+          {{ errorDias }}
+          <template #action
+            ><q-btn
+              flat
+              label="Reintentar"
+              :loading="cargandoDias"
+              @click="cargarDias"
+          /></template>
+        </q-banner>
         <q-input
           outlined
           dense
@@ -33,9 +61,7 @@
           label="Nombre(s) *"
           placeholder="Ingresa tu nombre"
           lazy-rules
-          :rules="[
-            v => !!v || 'El nombre es obligatorio'
-          ]"
+          :rules="[v => !!v || 'El nombre es obligatorio']"
         />
 
         <q-input
@@ -48,9 +74,7 @@
           label="Apellido paterno *"
           placeholder="Ingresa tu apellido paterno"
           lazy-rules
-          :rules="[
-            v => !!v || 'Campo obligatorio'
-          ]"
+          :rules="[v => !!v || 'Campo obligatorio']"
         />
 
         <q-input
@@ -109,18 +133,13 @@
           placeholder="Nombre de la institución o empresa"
         />
 
-        <div
-          v-if="registroVerificado"
-          class="correo-verificado-box"
-        >
+        <div v-if="registroVerificado" class="correo-verificado-box">
           <q-icon name="verified" />
           <span>Registro verificado correctamente</span>
         </div>
 
-        <div class="externo-dark-box">
-          <div class="box-label">
-            Días de participación *
-          </div>
+        <div class="externo-dark-box externo-days-box">
+          <div class="box-label"> Días de participación * </div>
 
           <div class="externo-days-grid">
             <q-checkbox
@@ -130,40 +149,32 @@
               :val="dia.value"
               :label="dia.label"
               color="primary"
+              :disable="cargandoDias || cargando"
               dark
             />
           </div>
 
-          <div
-            v-if="diasError"
-            class="upload-error"
-          >
+          <div v-if="diasError" class="upload-error">
             {{ diasError }}
           </div>
         </div>
 
         <div class="externo-dark-box externo-total-box">
-          <div class="box-label">
-            Total a pagar
-          </div>
+          <div class="box-label"> Total a pagar </div>
 
-          <div class="amount">
-            $ {{ total.toFixed(2) }}
-          </div>
+          <div class="amount"> $ {{ total.toFixed(2) }} </div>
 
-          <div class="box-help">
-            Selecciona los días de participación
-          </div>
+          <div class="box-help"
+            >${{ costoPorDia.toFixed(2) }} MXN por día seleccionado</div
+          >
         </div>
 
         <div class="externo-upload-box">
-          <div class="box-label">
-            Comprobante de pago *
-          </div>
+          <div class="box-label"> Comprobante de pago * </div>
 
           <q-file
             ref="fileInput"
-            style="display:none"
+            style="display: none"
             v-model="form.comprobante"
             accept=".pdf,.jpg,.jpeg,.png"
             @update:model-value="seleccionarArchivo"
@@ -190,8 +201,8 @@
                 <strong>
                   {{
                     form.comprobante
-                      ? 'Comprobante seleccionado'
-                      : 'Arrastra tu archivo aquí o selecciona'
+                      ? "Comprobante seleccionado"
+                      : "Arrastra tu archivo aquí o selecciona"
                   }}
                 </strong>
 
@@ -214,10 +225,7 @@
             />
           </div>
 
-          <div
-            v-if="archivoError"
-            class="upload-error"
-          >
+          <div v-if="archivoError" class="upload-error">
             {{ archivoError }}
           </div>
         </div>
@@ -230,34 +238,30 @@
             type="submit"
             class="btn-registro"
             :loading="cargando"
+            :disable="cargandoDias || !!errorDias || !congresoId"
           />
         </div>
 
-        <div
-          v-if="mensajeError"
-          class="upload-error externo-main-error"
-        >
+        <div v-if="mensajeError" class="upload-error externo-main-error">
           {{ mensajeError }}
         </div>
       </q-form>
     </section>
 
-    <q-dialog
-      v-model="mostrarResumen"
-      persistent
-    >
+    <q-dialog v-model="mostrarResumen" persistent>
       <q-card
         class="resumen-externo-card"
-        style="width:700px;max-width:90vw"
+        style="width: 700px; max-width: 90vw"
       >
         <q-card-section class="dialog-header">
-          <div class="text-h6 text-weight-bold">
-            Confirmar registro
-          </div>
+          <div class="text-h6 text-weight-bold"> Confirmar registro </div>
 
           <div class="text-caption">
             Verifica que toda la información sea correcta.
           </div>
+          <div class="text-caption q-mt-sm"
+            >Congreso: {{ congresoSeleccionado?.nombre }}</div
+          >
         </q-card-section>
 
         <q-card-section>
@@ -272,9 +276,7 @@
               </q-item-section>
 
               <q-item-section>
-                <div class="text-grey-7">
-                  Nombre
-                </div>
+                <div class="text-grey-7"> Nombre </div>
 
                 <div class="text-weight-medium">
                   {{ nombreCompleto }}
@@ -288,9 +290,7 @@
               </q-item-section>
 
               <q-item-section>
-                <div class="text-grey-7">
-                  Correo
-                </div>
+                <div class="text-grey-7"> Correo </div>
 
                 <div class="text-weight-medium">
                   {{ form.correo }}
@@ -304,12 +304,10 @@
               </q-item-section>
 
               <q-item-section>
-                <div class="text-grey-7">
-                  Institución o Empresa
-                </div>
+                <div class="text-grey-7"> Institución o Empresa </div>
 
                 <div class="text-weight-medium">
-                  {{ form.institucion || 'No especificado' }}
+                  {{ form.institucion || "No especificado" }}
                 </div>
               </q-item-section>
             </q-item>
@@ -320,9 +318,7 @@
               </q-item-section>
 
               <q-item-section>
-                <div class="text-grey-7">
-                  Teléfono
-                </div>
+                <div class="text-grey-7"> Teléfono </div>
 
                 <div class="text-weight-medium">
                   {{ form.telefono }}
@@ -349,15 +345,10 @@
           <q-separator class="q-my-lg" />
 
           <div class="row items-center">
-            <q-icon
-              name="attach_file"
-              class="q-mr-sm"
-            />
+            <q-icon name="attach_file" class="q-mr-sm" />
 
             <div>
-              <div class="text-grey-7">
-                Comprobante
-              </div>
+              <div class="text-grey-7"> Comprobante </div>
 
               <div class="text-weight-medium">
                 {{ archivo }}
@@ -368,23 +359,14 @@
           <q-separator class="q-my-lg" />
 
           <div class="row justify-between items-center">
-            <div class="text-h6 text-weight-bold">
-              Total a pagar
-            </div>
+            <div class="text-h6 text-weight-bold"> Total a pagar </div>
 
-            <div class="dialog-total">
-              $ {{ total.toFixed(2) }}
-            </div>
+            <div class="dialog-total"> $ {{ total.toFixed(2) }} </div>
           </div>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn
-            flat
-            label="Volver"
-            class="dialog-btn-flat"
-            v-close-popup
-          />
+          <q-btn flat label="Volver" class="dialog-btn-flat" v-close-popup />
 
           <q-btn
             label="Confirmar registro"
@@ -396,18 +378,13 @@
       </q-card>
     </q-dialog>
 
-    <q-dialog
-      v-model="mostrarCorreoDuplicado"
-      persistent
-    >
+    <q-dialog v-model="mostrarCorreoDuplicado" persistent>
       <q-card
         class="resumen-externo-card"
-        style="width:560px;max-width:90vw"
+        style="width: 560px; max-width: 90vw"
       >
         <q-card-section class="dialog-header">
-          <div class="text-h6 text-weight-bold">
-            Registro ya recibido
-          </div>
+          <div class="text-h6 text-weight-bold"> Registro ya recibido </div>
 
           <div class="text-caption">
             Tu solicitud ya se encuentra en proceso.
@@ -421,38 +398,29 @@
             size="72px"
           />
 
-          <div class="text-h6 q-mt-md">
-            Tus datos serán revisados
+          <div class="text-h6 q-mt-md"> Tus datos serán revisados </div>
+
+          <div class="text-grey-7 q-mt-sm">
+            Este correo ya tiene un registro asociado. Si ya verificaste tu
+            correo, tu solicitud quedó pendiente para revisión de pago.
           </div>
 
           <div class="text-grey-7 q-mt-sm">
-            Este correo ya tiene un registro asociado. Si ya verificaste tu correo,
-            tu solicitud quedó pendiente para revisión de pago.
-          </div>
-
-          <div class="text-grey-7 q-mt-sm">
-            Si aún no lo has verificado, revisa tu bandeja de entrada o spam para
-            finalizar el proceso.
+            Si aún no lo has verificado, revisa tu bandeja de entrada o spam
+            para finalizar el proceso.
           </div>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn
-            label="Entendido"
-            class="dialog-btn-primary"
-            v-close-popup
-          />
+          <q-btn label="Entendido" class="dialog-btn-primary" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <q-dialog
-      v-model="mostrarVerificacionEnviada"
-      persistent
-    >
+    <q-dialog v-model="mostrarVerificacionEnviada" persistent>
       <q-card
         class="resumen-externo-card"
-        style="width:560px;max-width:90vw"
+        style="width: 560px; max-width: 90vw"
       >
         <q-card-section class="dialog-header">
           <div class="text-h6 text-weight-bold">
@@ -465,19 +433,16 @@
         </q-card-section>
 
         <q-card-section class="text-center q-pa-lg">
-          <q-icon
-            name="outgoing_mail"
-            class="dialog-main-icon"
-            size="72px"
-          />
+          <q-icon name="outgoing_mail" class="dialog-main-icon" size="72px" />
 
           <div class="text-h6 q-mt-md">
             Te enviamos un enlace de verificación
           </div>
 
           <div class="text-grey-7 q-mt-sm">
-            Ingresa a tu correo electrónico y da clic en el enlace de verificación.
-            Al confirmarlo, tu registro quedará finalizado automáticamente.
+            Ingresa a tu correo electrónico y da clic en el enlace de
+            verificación. Al confirmarlo, tu registro quedará finalizado
+            automáticamente.
           </div>
 
           <div class="dialog-email q-mt-md">
@@ -486,27 +451,18 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn
-            label="Entendido"
-            class="dialog-btn-primary"
-            v-close-popup
-          />
+          <q-btn label="Entendido" class="dialog-btn-primary" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-    <q-dialog
-      v-model="mostrarCorreoVerificado"
-      persistent
-    >
+    <q-dialog v-model="mostrarCorreoVerificado" persistent>
       <q-card
         class="resumen-externo-card"
-        style="width:560px;max-width:90vw"
+        style="width: 560px; max-width: 90vw"
       >
         <q-card-section class="dialog-header">
-          <div class="text-h6 text-weight-bold">
-            Registro verificado
-          </div>
+          <div class="text-h6 text-weight-bold"> Registro verificado </div>
 
           <div class="text-caption">
             Tu registro fue finalizado correctamente.
@@ -514,11 +470,7 @@
         </q-card-section>
 
         <q-card-section class="text-center q-pa-lg">
-          <q-icon
-            name="verified"
-            class="dialog-main-icon"
-            size="72px"
-          />
+          <q-icon name="verified" class="dialog-main-icon" size="72px" />
 
           <div class="text-h6 q-mt-md">
             Tu correo fue verificado correctamente
@@ -531,11 +483,7 @@
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn
-            label="Entendido"
-            class="dialog-btn-primary"
-            v-close-popup
-          />
+          <q-btn label="Entendido" class="dialog-btn-primary" v-close-popup />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -543,271 +491,277 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { apiBaseUrl } from '@/services/api'
+import { ref, computed, onMounted, watch } from "vue";
+import { useRouter } from "vue-router";
+import { apiBaseUrl } from "@/services/api";
+import { useDiasRegistro } from "@/composables/useDiasRegistro";
 
-const router = useRouter()
+const router = useRouter();
 
-const API_EXTERNOS = `${apiBaseUrl}/externos`
+const API_EXTERNOS = `${apiBaseUrl}/externos`;
 
-const COSTO_DIA = 250
-const MAX_SIZE = 5 * 1024 * 1024
+const {
+  congresoId,
+  congresoSeleccionado,
+  opcionesCongreso,
+  diasOptions: dias,
+  costoPorDia,
+  cargandoDias,
+  errorDias,
+  cargarDias
+} = useDiasRegistro("EXTERNO");
+const MAX_SIZE = 5 * 1024 * 1024;
 
 const TIPOS_VALIDOS = [
-  'application/pdf',
-  'image/jpeg',
-  'image/jpg',
-  'image/png'
-]
+  "application/pdf",
+  "image/jpeg",
+  "image/jpg",
+  "image/png"
+];
 
-const formRef = ref(null)
-const fileInput = ref(null)
+const formRef = ref(null);
+const fileInput = ref(null);
 
-const mostrarResumen = ref(false)
-const cargando = ref(false)
-const mostrarCorreoDuplicado = ref(false)
-const mostrarVerificacionEnviada = ref(false)
-const mostrarCorreoVerificado = ref(false)
+const mostrarResumen = ref(false);
+const cargando = ref(false);
+const mostrarCorreoDuplicado = ref(false);
+const mostrarVerificacionEnviada = ref(false);
+const mostrarCorreoVerificado = ref(false);
 
-const mensajeError = ref('')
-const correoVerificacionEnviado = ref('')
-const registroVerificado = ref(false)
-
-const dias = [
-  { label: 'Día 1', value: 'dia1' },
-  { label: 'Día 2', value: 'dia2' },
-  { label: 'Día 3', value: 'dia3' }
-]
+const mensajeError = ref("");
+const correoVerificacionEnviado = ref("");
+const registroVerificado = ref(false);
 
 const form = ref({
-  nombre: '',
-  apellidoPaterno: '',
-  apellidoMaterno: '',
-  correo: '',
-  telefono: '',
-  institucion: '',
+  nombre: "",
+  apellidoPaterno: "",
+  apellidoMaterno: "",
+  correo: "",
+  telefono: "",
+  institucion: "",
   dias: [],
   comprobante: null
-})
+});
 
-const isDragging = ref(false)
-const archivoError = ref('')
-const diasError = ref('')
+const isDragging = ref(false);
+const archivoError = ref("");
+const diasError = ref("");
 
-const total = computed(() =>
-  form.value.dias.length * COSTO_DIA
-)
+const total = computed(() => form.value.dias.length * costoPorDia.value);
 
 const diasSeleccionados = computed(() =>
-  dias.filter(d => form.value.dias.includes(d.value))
-)
+  dias.value.filter(d => form.value.dias.includes(d.value))
+);
+
+watch(congresoId, () => {
+  form.value.dias = [];
+  mostrarResumen.value = false;
+});
 
 const nombreCompleto = computed(() =>
-  [
-    form.value.nombre,
-    form.value.apellidoPaterno,
-    form.value.apellidoMaterno
-  ]
+  [form.value.nombre, form.value.apellidoPaterno, form.value.apellidoMaterno]
     .filter(Boolean)
-    .join(' ')
-)
+    .join(" ")
+);
 
 const archivo = computed(() =>
-  form.value.comprobante
-    ? form.value.comprobante.name
-    : 'Adjuntar comprobante'
-)
+  form.value.comprobante ? form.value.comprobante.name : "Adjuntar comprobante"
+);
 
 const accionLabel = computed(() =>
-  form.value.comprobante
-    ? 'Cambiar archivo'
-    : 'Buscar archivo'
-)
+  form.value.comprobante ? "Cambiar archivo" : "Buscar archivo"
+);
 
 onMounted(() => {
-  leerResultadoVerificacionDesdeUrl()
-})
+  leerResultadoVerificacionDesdeUrl();
+});
 
 function abrirSelector() {
-  fileInput.value?.pickFiles()
+  fileInput.value?.pickFiles();
 }
 
 function esArchivoValido(file) {
   if (!TIPOS_VALIDOS.includes(file.type)) {
-    archivoError.value = 'Formato no válido. Solo PDF, JPG o PNG.'
-    return false
+    archivoError.value = "Formato no válido. Solo PDF, JPG o PNG.";
+    return false;
   }
 
   if (file.size > MAX_SIZE) {
-    archivoError.value = 'El archivo supera el tamaño máximo de 5 MB.'
-    return false
+    archivoError.value = "El archivo supera el tamaño máximo de 5 MB.";
+    return false;
   }
 
-  archivoError.value = ''
-  return true
+  archivoError.value = "";
+  return true;
 }
 
 function seleccionarArchivo(file) {
   if (!file) {
-    form.value.comprobante = null
-    return
+    form.value.comprobante = null;
+    return;
   }
 
   if (!esArchivoValido(file)) {
-    form.value.comprobante = null
-    return
+    form.value.comprobante = null;
+    return;
   }
 
-  form.value.comprobante = file
+  form.value.comprobante = file;
 }
 
 function onDrop(event) {
-  isDragging.value = false
+  isDragging.value = false;
 
-  const file = event.dataTransfer?.files?.[0]
+  const file = event.dataTransfer?.files?.[0];
 
-  if (!file) return
-  if (!esArchivoValido(file)) return
+  if (!file) return;
+  if (!esArchivoValido(file)) return;
 
-  form.value.comprobante = file
+  form.value.comprobante = file;
 }
 
 function validarDias() {
-  if (form.value.dias.length === 0) {
-    diasError.value = 'Selecciona al menos un día.'
-    return false
+  if (
+    !congresoId.value ||
+    cargandoDias.value ||
+    errorDias.value ||
+    form.value.dias.length === 0 ||
+    diasSeleccionados.value.length !== form.value.dias.length
+  ) {
+    diasError.value = "Selecciona al menos un día.";
+    return false;
   }
 
-  diasError.value = ''
-  return true
+  diasError.value = "";
+  return true;
 }
 
 function leerResultadoVerificacionDesdeUrl() {
-  const hash = window.location.hash || ''
-  const queryString = hash.includes('?')
-    ? hash.split('?')[1]
-    : window.location.search.replace('?', '')
+  const hash = window.location.hash || "";
+  const queryString = hash.includes("?")
+    ? hash.split("?")[1]
+    : window.location.search.replace("?", "");
 
-  if (!queryString) return
+  if (!queryString) return;
 
-  const params = new URLSearchParams(queryString)
-  const resultado = params.get('registro')
-  const mensaje = params.get('mensaje')
+  const params = new URLSearchParams(queryString);
+  const resultado = params.get("registro");
+  const mensaje = params.get("mensaje");
 
-  if (resultado === 'verificado') {
-    registroVerificado.value = true
-    mostrarCorreoVerificado.value = true
+  if (resultado === "verificado") {
+    registroVerificado.value = true;
+    mostrarCorreoVerificado.value = true;
   }
 
-  if (resultado === 'error') {
-    mensajeError.value =
-      mensaje || 'No se pudo verificar el registro.'
+  if (resultado === "error") {
+    mensajeError.value = mensaje || "No se pudo verificar el registro.";
   }
 
   window.history.replaceState(
     null,
-    '',
+    "",
     `${window.location.origin}${window.location.pathname}#/registro-externo`
-  )
+  );
 }
 
 function limpiarFormulario() {
   form.value = {
-    nombre: '',
-    apellidoPaterno: '',
-    apellidoMaterno: '',
-    correo: '',
-    telefono: '',
-    institucion: '',
+    nombre: "",
+    apellidoPaterno: "",
+    apellidoMaterno: "",
+    correo: "",
+    telefono: "",
+    institucion: "",
     dias: [],
     comprobante: null
-  }
+  };
 
-  archivoError.value = ''
-  diasError.value = ''
-  mensajeError.value = ''
-  isDragging.value = false
+  archivoError.value = "";
+  diasError.value = "";
+  mensajeError.value = "";
+  isDragging.value = false;
 
-  formRef.value?.resetValidation()
+  formRef.value?.resetValidation();
 }
 
 async function registrar() {
-  const formularioValido = await formRef.value.validate()
-  const diasValidos = validarDias()
+  const formularioValido = await formRef.value.validate();
+  const diasValidos = validarDias();
 
   if (!form.value.comprobante) {
-    archivoError.value = 'Debes adjuntar un comprobante.'
+    archivoError.value = "Debes adjuntar un comprobante.";
   }
 
-  if (
-    !formularioValido ||
-    !diasValidos ||
-    !form.value.comprobante
-  ) {
-    return
+  if (!formularioValido || !diasValidos || !form.value.comprobante) {
+    return;
   }
 
-  mensajeError.value = ''
-  mostrarResumen.value = true
+  mensajeError.value = "";
+  mostrarResumen.value = true;
 }
 
 async function confirmarRegistro() {
-  cargando.value = true
-  mensajeError.value = ''
+  if (cargando.value) return;
+  if (!validarDias()) {
+    mostrarResumen.value = false;
+    return;
+  }
+
+  cargando.value = true;
+  mensajeError.value = "";
 
   try {
-    const formData = new FormData()
+    const formData = new FormData();
+    formData.append("congresoId", congresoId.value);
 
-    formData.append('nombre', form.value.nombre)
-    formData.append('apellidoPaterno', form.value.apellidoPaterno)
-    formData.append('apellidoMaterno', form.value.apellidoMaterno || '')
-    formData.append('correo', form.value.correo)
-    formData.append('telefono', form.value.telefono)
-    formData.append('institucion', form.value.institucion || '')
-    formData.append('total', String(total.value))
+    formData.append("nombre", form.value.nombre);
+    formData.append("apellidoPaterno", form.value.apellidoPaterno);
+    formData.append("apellidoMaterno", form.value.apellidoMaterno || "");
+    formData.append("correo", form.value.correo);
+    formData.append("telefono", form.value.telefono);
+    formData.append("institucion", form.value.institucion || "");
+    formData.append("total", String(total.value));
 
-    form.value.dias.forEach((dia) => {
-      formData.append('dias', dia)
-    })
+    diasSeleccionados.value.forEach(dia => {
+      formData.append("diaEventoIds", dia.value);
+      formData.append("dias", dia.fecha);
+    });
 
-    formData.append('comprobante', form.value.comprobante)
+    formData.append("comprobante", form.value.comprobante);
 
     const response = await fetch(API_EXTERNOS, {
-      method: 'POST',
+      method: "POST",
       body: formData
-    })
+    });
 
-    const data = await response.json().catch(() => null)
+    const data = await response.json().catch(() => null);
 
     if (response.status === 409) {
-      mostrarResumen.value = false
-      mostrarCorreoDuplicado.value = true
-      return
+      mostrarResumen.value = false;
+      mostrarCorreoDuplicado.value = true;
+      return;
     }
 
     if (!response.ok) {
-      throw new Error(
-        data?.message || 'No se pudo registrar el participante.'
-      )
+      throw new Error(data?.message || "No se pudo registrar el participante.");
     }
 
-    correoVerificacionEnviado.value = form.value.correo
-    mostrarResumen.value = false
-    mostrarVerificacionEnviada.value = true
-    limpiarFormulario()
+    correoVerificacionEnviado.value = form.value.correo;
+    mostrarResumen.value = false;
+    mostrarVerificacionEnviada.value = true;
+    limpiarFormulario();
   } catch (error) {
-    mensajeError.value =
-      error.message || 'Ocurrió un error al registrar.'
+    mostrarResumen.value = false;
+    mensajeError.value = error.message || "Ocurrió un error al registrar.";
 
-    console.error('Error al registrar:', error)
+    console.error("Error al registrar:", error);
   } finally {
-    cargando.value = false
+    cargando.value = false;
   }
 }
 
 function goToParticipantes() {
-  void router.push('/participantes')
+  void router.push("/participantes");
 }
 </script>
 

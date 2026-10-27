@@ -454,7 +454,7 @@ export class LoginService {
    * RECUPERAR PARTICIPANTE DESPUÉS DEL OTP
    * ============================================================
    */
-  private async obtenerParticipanteAutorizado(
+  async obtenerParticipanteAutorizado(
     tipo: TipoParticipante,
     participanteId: string,
   ) {

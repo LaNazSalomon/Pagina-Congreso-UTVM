@@ -12,6 +12,8 @@
         />
 
         <q-toolbar-title class="text-h6"> Congreso UTVM </q-toolbar-title>
+        <span class="q-mr-sm gt-xs">{{ usuarioPersonal?.nombre }}</span>
+        <q-btn flat no-caps icon="logout" label="Salir" @click="cerrarSesion" />
 
         <q-btn
           flat
@@ -44,6 +46,20 @@
     </q-drawer>
 
     <q-page-container class="page-content">
+      <q-banner
+        v-if="usuarioPersonal && !usuarioPersonal.contrasenaConfigurada"
+        class="bg-amber-1 text-dark"
+      >
+        El personal ahora entra con contraseña. Tu cuenta y permisos se
+        conservan.
+        <template #action
+          ><q-btn
+            flat
+            no-caps
+            label="Configurar mi contraseña"
+            to="/personal/acceso"
+        /></template>
+      </q-banner>
       <router-view />
     </q-page-container>
   </q-layout>
@@ -51,14 +67,37 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useQuasar } from "quasar";
+import { useRouter } from "vue-router";
+import {
+  usuarioPersonal,
+  salirPersonal,
+  errorPersonal
+} from "../services/personalService";
 import EssentialLink, {
   type EssentialLinkProps
 } from "@/components/EssentialLink.vue";
 import { useThemeMode } from "@/composables/useThemeMode";
 
 const { isLight, toggleTheme } = useThemeMode();
+const $q = useQuasar();
+const router = useRouter();
+async function cerrarSesion() {
+  try {
+    await salirPersonal();
+    await router.replace("/personal/acceso");
+  } catch (error) {
+    $q.notify({ type: "negative", message: errorPersonal(error) });
+  }
+}
 
 const linksList: EssentialLinkProps[] = [
+  {
+    label: "Usuarios y roles",
+    caption: "Cuentas del personal",
+    icon: "admin_panel_settings",
+    link: "/admin/usuarios"
+  },
   {
     label: "Dashboard de administrador",
     caption: "Resumen general",

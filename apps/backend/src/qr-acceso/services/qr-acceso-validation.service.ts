@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  RolPersonal,
+  UsuarioPersonal,
+} from '../../personal/entities/personal.entity';
 import { ConfigService } from '@nestjs/config';
 import { DataSource, EntityManager } from 'typeorm';
 
@@ -48,8 +52,22 @@ export class QrAccesoValidationService {
     return this.toResponse(context, false);
   }
 
-  confirm(token: string): Promise<QrAccesoResponseDto> {
+  confirm(token: string, validadorId: string): Promise<QrAccesoResponseDto> {
+    if (!validadorId)
+      throw new ForbiddenException('Inicia sesión como validador.');
     return this.dataSource.transaction(async (manager) => {
+      const validador = await manager.findOne(UsuarioPersonal, {
+        where: { id: validadorId },
+        lock: { mode: 'pessimistic_read' },
+      });
+      if (
+        !validador?.activo ||
+        !validador.correoVerificado ||
+        validador.rol !== RolPersonal.VALIDADOR
+      )
+        throw new ForbiddenException(
+          'La cuenta no está habilitada para validar entradas.',
+        );
       const context = await this.loadContext(manager, token, true);
       if (context.acceso.acceso_utilizado) {
         this.errors.fail(QrResultado.ACCESO_YA_UTILIZADO);
@@ -63,7 +81,11 @@ export class QrAccesoValidationService {
           dia_evento_id: context.acceso.dia_evento_id,
           acceso_utilizado: false,
         },
-        { acceso_utilizado: true, fecha_ingreso: fechaIngreso },
+        {
+          acceso_utilizado: true,
+          fecha_ingreso: fechaIngreso,
+          validador_id: validadorId,
+        },
       );
       if (result.affected !== 1) {
         this.errors.fail(QrResultado.ACCESO_YA_UTILIZADO);
@@ -104,6 +126,13 @@ export class QrAccesoValidationService {
     }
 
     const fecha = await this.currentDate(manager);
+    const congreso = relacion.participante.congreso;
+    if (
+      fecha < congreso.fecha_inicio.toISOString().slice(0, 10) ||
+      fecha > congreso.fecha_fin.toISOString().slice(0, 10)
+    ) {
+      this.errors.fail(QrResultado.FUERA_DE_FECHA);
+    }
     const dia = await manager.findOne(DiaEvento, {
       where: {
         congreso: { id: relacion.participante.congreso.id },
@@ -112,6 +141,13 @@ export class QrAccesoValidationService {
       relations: { congreso: true },
     });
     if (!dia) this.errors.fail(QrResultado.FUERA_DE_FECHA);
+    if (
+      participante.congresoId &&
+      (participante.congresoId !== relacion.participante.congreso.id ||
+        !participante.diaEventoIds?.includes(dia.id))
+    ) {
+      this.errors.fail(QrResultado.DIA_NO_AUTORIZADO);
+    }
 
     const acceso = await manager.findOne(DiaParticipante, {
       where: {

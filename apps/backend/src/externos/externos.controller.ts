@@ -1,3 +1,4 @@
+import { AccesoPropio, Publico } from '../personal/acceso.decorator';
 import {
   BadRequestException,
   Body,
@@ -51,6 +52,8 @@ function normalizarDias(dias: string | string[] | undefined): string[] {
 }
 
 interface ExternoMultipartBody {
+  congresoId: string;
+  diaEventoIds?: string | string[];
   nombre: string;
   apellidoPaterno: string;
   apellidoMaterno?: string;
@@ -65,6 +68,7 @@ interface ExternoMultipartBody {
 export class ExternosController {
   constructor(private readonly externosService: ExternosService) {}
 
+  @Publico()
   @Get('verificar-correo/:token')
   async verificarCorreo(@Param('token') token: string, @Res() res: Response) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:9000';
@@ -87,6 +91,7 @@ export class ExternosController {
     }
   }
 
+  @Publico()
   @Post()
   @UseInterceptors(
     ArchivoConcurrencyInterceptor,
@@ -102,6 +107,8 @@ export class ExternosController {
     }
 
     const createExternoDto: CreateExternoDto = {
+      congresoId: body.congresoId,
+      diaEventoIds: normalizarDias(body.diaEventoIds),
       nombre: body.nombre,
       apellidoPaterno: body.apellidoPaterno,
       apellidoMaterno: body.apellidoMaterno || null,
@@ -128,6 +135,7 @@ export class ExternosController {
     return this.externosService.enviarQrAcceso(id, dto);
   }
 
+  @AccesoPropio({ tipo: 'EXTERNO', idParam: 'id' })
   @Post(':id/qr-acceso/enviar-automatico')
   enviarQrAccesoAutomatico(@Param('id', ParseUUIDPipe) id: string) {
     return this.externosService.enviarQrAccesoAutomatico(id);

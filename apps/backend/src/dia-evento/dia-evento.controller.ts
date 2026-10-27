@@ -1,20 +1,26 @@
+import { Publico } from '../personal/acceso.decorator';
 import { Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 
 import { DiaEventoResponse, DiaEventoService } from './dia-evento.service';
 
-// TODO: Agregar autenticacion y autorizacion administrativa.
-@Controller('congresos/:congresoId/dias-evento')
+@Controller('congresos')
 export class DiaEventoController {
   constructor(private readonly dias: DiaEventoService) {}
 
-  @Post('generar')
+  @Publico()
+  @Get('opciones-registro')
+  opcionesRegistro() {
+    return this.dias.opcionesRegistro();
+  }
+
+  @Post(':congresoId/dias-evento/generar')
   generar(
     @Param('congresoId', ParseUUIDPipe) congresoId: string,
   ): Promise<DiaEventoResponse[]> {
     return this.dias.generar(congresoId);
   }
 
-  @Get()
+  @Get(':congresoId/dias-evento')
   findAll(
     @Param('congresoId', ParseUUIDPipe) congresoId: string,
   ): Promise<DiaEventoResponse[]> {

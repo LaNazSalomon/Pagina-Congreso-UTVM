@@ -126,10 +126,7 @@ export class HackatonService {
       );
   }
   private dateOnly(value: Date): string {
-    const year = value.getFullYear();
-    const month = String(value.getMonth() + 1).padStart(2, '0');
-    const day = String(value.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return value.toISOString().slice(0, 10);
   }
   private rethrowConflict(error: unknown): never {
     if ((error as { code?: string }).code === '23505')

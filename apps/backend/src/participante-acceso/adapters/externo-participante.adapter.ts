@@ -47,6 +47,12 @@ export class ExternoParticipanteAdapter implements ParticipanteAdapter {
         .filter(Boolean)
         .join(' '),
       correo: participante.correo,
+      ...(participante.congresoId
+        ? {
+            congresoId: participante.congresoId,
+            diaEventoIds: participante.diaEventoIds ?? [],
+          }
+        : {}),
     };
   }
 }

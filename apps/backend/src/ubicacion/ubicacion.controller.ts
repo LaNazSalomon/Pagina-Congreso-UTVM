@@ -1,3 +1,4 @@
+import { Publico } from '../personal/acceso.decorator';
 import {
   Controller,
   Get,
@@ -21,11 +22,13 @@ export class UbicacionController {
     return this.ubicacionService.create(createUbicacionDto);
   }
 
+  @Publico()
   @Get()
   findAll() {
     return this.ubicacionService.findAll();
   }
 
+  @Publico()
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.ubicacionService.findOne(id);

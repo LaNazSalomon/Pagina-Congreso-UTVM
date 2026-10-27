@@ -24,6 +24,25 @@ export class CorreoService {
     private readonly config: ConfigService,
   ) {}
 
+  async enviarEnlaceContrasenaPersonal(
+    destinatario: string,
+    token: string,
+    minutosVigencia = 30,
+  ): Promise<void> {
+    const accesoUrl = `${this.config.get<string>('FRONTEND_URL', 'http://localhost:9000').replace(/\/$/, '')}/personal/restablecer-contrasena#token=${encodeURIComponent(token)}`;
+    const html = this.templates.renderEnlaceContrasenaPersonal({
+      minutosVigencia,
+      accesoUrl,
+    });
+    await this.transporter.sendMail({
+      from: this.config.getOrThrow<string>('MAIL_FROM'),
+      to: destinatario,
+      subject: 'Configura tu contraseña - Congreso UTVM',
+      html,
+      text: `Abre este enlace para elegir tu contraseña: ${accesoUrl}\nVence en ${minutosVigencia} minutos y solo se puede usar una vez. Tu contraseña actual seguirá funcionando hasta que guardes la nueva. Si no reconoces la solicitud, contacta a un administrador.`,
+    });
+  }
+
   async enviarQrAcceso(datos: DatosCorreoQrAcceso): Promise<void> {
     const html = this.templates.renderQrAcceso({
       nombreParticipante: datos.nombreParticipante,

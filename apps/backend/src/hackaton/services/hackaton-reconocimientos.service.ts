@@ -37,8 +37,9 @@ export class HackatonReconocimientosService {
       throw new BadRequestException(
         'El Hackatón no tiene evaluadores asignados',
       );
+    const assignments = [...hackaton.evaluadores];
     const jobs = await Promise.all(
-      hackaton.evaluadores.map((a) =>
+      assignments.map((a) =>
         this.prepare({
           key: `hackaton:${hackaton.id}:evaluador:${a.ponente.id}`,
           hackaton,
@@ -56,6 +57,45 @@ export class HackatonReconocimientosService {
         },
       })),
     );
+    await this.markEvaluatorsIssued(assignments.map((item) => item.id));
+    return {
+      zip: buildZip(files),
+      filename: `${this.safe(hackaton.nombre)}-evaluadores.zip`,
+    };
+  }
+
+  async evaluadorPdf(hackatonId: string, evaluadorId: string) {
+    const assignment = await this.dataSource
+      .getRepository(HackatonEvaluador)
+      .findOne({
+        where: { id: evaluadorId, hackaton: { id: hackatonId } },
+        relations: { hackaton: { congreso: true }, ponente: true },
+      });
+    if (!assignment)
+      throw new NotFoundException('Evaluador no encontrado en este Hackatón');
+    const recognition = await this.prepare({
+      key: `hackaton:${hackatonId}:evaluador:${assignment.ponente.id}`,
+      hackaton: assignment.hackaton,
+      ponenteId: assignment.ponente.id,
+      type: ReconocimientoTipo.HACKATON_EVALUADOR,
+      name: assignment.ponente.nombre,
+    });
+    const [file] = await this.renderLimited(
+      [
+        {
+          recognition,
+          context: {
+            participacion: `Participación como evaluador de ${assignment.hackaton.nombre}`,
+          },
+        },
+      ],
+      'No fue posible generar el reconocimiento del evaluador; puede reintentarlo',
+    );
+    await this.markEvaluatorsIssued([assignment.id]);
+    return { pdf: file.data, filename: file.name };
+  }
+
+  private async markEvaluatorsIssued(ids: string[]) {
     await this.dataSource
       .getRepository(HackatonEvaluador)
       .createQueryBuilder()
@@ -64,12 +104,9 @@ export class HackatonReconocimientosService {
         reconocimiento_emitido_at: () =>
           'COALESCE(reconocimiento_emitido_at, CURRENT_TIMESTAMP)',
       })
-      .where('hackaton_id = :hackatonId', { hackatonId })
+      .whereInIds(ids)
+      .andWhere('deleted_at IS NULL')
       .execute();
-    return {
-      zip: buildZip(files),
-      filename: `${this.safe(hackaton.nombre)}-evaluadores.zip`,
-    };
   }
   async equipoZip(hackatonId: string, equipoId: string) {
     const team = await this.dataSource.getRepository(HackatonEquipo).findOne({
@@ -161,6 +198,7 @@ export class HackatonReconocimientosService {
       recognition: Reconocimiento;
       context: { equipo?: string; resultado?: string; participacion?: string };
     }[],
+    errorMessage = 'No fue posible generar el lote completo; puede reintentarlo',
   ) {
     const results = Array.from<{ name: string; data: Buffer } | undefined>({
       length: jobs.length,
@@ -178,9 +216,9 @@ export class HackatonReconocimientosService {
           );
           await this.reconocimientos.update(job.recognition.id, {
             estado: ReconocimientoEstado.EMITIDO,
-            intentos: job.recognition.intentos + 1,
-            primera_fecha_emision:
-              job.recognition.primera_fecha_emision ?? new Date(),
+            intentos: () => 'intentos + 1',
+            primera_fecha_emision: () =>
+              'COALESCE(primera_fecha_emision, CURRENT_TIMESTAMP)',
             ultimo_error: null,
             ultimo_pdf_sha256: createHash('sha256').update(pdf).digest('hex'),
           });
@@ -190,8 +228,9 @@ export class HackatonReconocimientosService {
           };
         } catch (error) {
           await this.reconocimientos.update(job.recognition.id, {
-            estado: ReconocimientoEstado.FALLIDO,
-            intentos: job.recognition.intentos + 1,
+            estado: () =>
+              "CASE WHEN estado = 'EMITIDO' THEN estado ELSE 'FALLIDO' END",
+            intentos: () => 'intentos + 1',
             ultimo_error: error instanceof Error ? error.stack : String(error),
           });
           throw error;
@@ -199,16 +238,16 @@ export class HackatonReconocimientosService {
       }
     };
     try {
-      await Promise.all(
+      const workers = await Promise.allSettled(
         Array.from({ length: Math.min(4, jobs.length) }, () => worker()),
       );
+      if (workers.some((result) => result.status === 'rejected'))
+        throw new Error('Fallo al generar reconocimientos');
       return results.filter(
         (item): item is { name: string; data: Buffer } => item !== undefined,
       );
     } catch {
-      throw new InternalServerErrorException(
-        'No fue posible generar el lote completo; puede reintentarlo',
-      );
+      throw new InternalServerErrorException(errorMessage);
     }
   }
   private safe(value: string): string {

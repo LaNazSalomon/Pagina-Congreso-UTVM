@@ -83,12 +83,22 @@
           @click="inspect"
         />
       </q-card-actions>
+      <q-card-actions class="q-pa-md"
+        ><q-btn
+          flat
+          no-caps
+          color="primary"
+          icon="qr_code_scanner"
+          label="Escanear otro QR"
+          to="/validar"
+          class="full-width"
+      /></q-card-actions>
     </q-card>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, watch, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import { getQrApiError, qrAccessService } from "../services/qrAccessService";
@@ -164,9 +174,13 @@ function formatDateTime(value: string) {
   });
 }
 
-onMounted(() => {
-  void inspect();
-});
+watch(
+  token,
+  () => {
+    void inspect();
+  },
+  { immediate: true }
+);
 </script>
 
 <style scoped>
@@ -176,6 +190,8 @@ onMounted(() => {
 }
 
 .validation-card {
+  color: #1d2b28;
+  color-scheme: light;
   width: min(100%, 520px);
   border-radius: 24px;
 }

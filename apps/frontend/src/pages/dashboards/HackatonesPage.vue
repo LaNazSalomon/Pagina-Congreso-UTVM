@@ -12,7 +12,7 @@
         color="primary"
         icon="add"
         label="Nuevo Hackatón"
-        :disable="busy"
+        :disable="busy || downloadBusy !== null"
         @click="newHackathon"
       />
     </div>
@@ -34,7 +34,7 @@
               clickable
               :active="current?.id === item.id"
               active-class="hackaton-item-active"
-              :disable="busy"
+              :disable="busy || downloadBusy !== null"
               @click="select(item.id)"
             >
               <q-item-section>
@@ -112,10 +112,13 @@
                   :options="evaluatorOptions"
                   :assignments="current.evaluadores"
                   :loading="busy"
-                  :downloading="downloadBusy === 'evaluators'"
+                  :downloading="downloadBusy"
                   :persistence-key="`hackaton-${current.id}-evaluators`"
-                  @save="saveEvaluators"
+                  @add="addEvaluators"
+                  @remove="removeEvaluator"
+                  @refresh-profiles="refreshEvaluatorProfiles"
                   @download="downloadEvaluatorsZip"
+                  @download-individual="downloadEvaluatorPdf"
                 />
               </q-tab-panel>
 
@@ -252,7 +255,7 @@ const run = async (
   success: string,
   fallbackError: string
 ) => {
-  if (busy.value) return false;
+  if (busy.value || downloadBusy.value) return false;
   busy.value = true;
   try {
     await operation();
@@ -319,18 +322,60 @@ const saveGeneral = async (value: HackatonPayload) => {
   if (succeeded && savedId) tab.value = "general";
 };
 
-const saveEvaluators = async (ids: string[]) => {
+const addEvaluators = async (ids: string[]) => {
   if (!current.value) return;
   const id = current.value.id;
   await run(
     async () => {
-      await hackatones.replaceEvaluators(id, ids);
+      await hackatones.addEvaluators(id, ids);
       evaluatorsPanelRef.value?.clearDraft();
       await select(id, "evaluators");
     },
-    "Evaluadores actualizados correctamente.",
-    "No se pudieron actualizar los evaluadores."
+    "Evaluadores agregados correctamente. Ya puedes descargar sus reconocimientos.",
+    "No se pudieron agregar los evaluadores."
   );
+};
+
+const refreshEvaluatorProfiles = async () => {
+  await run(
+    async () => {
+      await evaluadoresQuery.refetch();
+      if (evaluadoresQuery.error.value)
+        throw new Error(evaluadoresQuery.error.value);
+    },
+    "Perfiles de evaluadores actualizados.",
+    "No se pudieron actualizar los perfiles de evaluadores."
+  );
+};
+
+const removeEvaluator = (assignmentId: string) => {
+  if (!current.value || busy.value || downloadBusy.value) return;
+  const hackatonId = current.value.id;
+  const assignment = current.value.evaluadores.find(
+    item => item.id === assignmentId
+  );
+  if (!assignment || assignment.bloqueado) return;
+  $q.dialog({
+    title: "Quitar evaluador",
+    message: `¿Quitar a ${assignment.ponente.nombre} de este Hackatón?`,
+    cancel: true,
+    persistent: true
+  }).onOk(() => {
+    void run(
+      async () => {
+        const latest = await hackatones.get(hackatonId);
+        await hackatones.replaceEvaluators(
+          hackatonId,
+          latest.evaluadores
+            .filter(item => item.id !== assignmentId)
+            .map(item => item.ponente.id)
+        );
+        await select(hackatonId, "evaluators");
+      },
+      "Evaluador eliminado de este Hackatón.",
+      "No se pudo quitar al evaluador."
+    );
+  });
 };
 
 const loadEligible = async () => {
@@ -423,7 +468,7 @@ const removeHackathon = () => {
 };
 
 const downloadEvaluatorsZip = async () => {
-  if (!current.value || downloadBusy.value) return;
+  if (!current.value || busy.value || downloadBusy.value) return;
   const id = current.value.id;
   downloadBusy.value = "evaluators";
   try {
@@ -441,8 +486,30 @@ const downloadEvaluatorsZip = async () => {
   }
 };
 
+const downloadEvaluatorPdf = async (assignmentId: string) => {
+  if (!current.value || busy.value || downloadBusy.value) return;
+  const id = current.value.id;
+  downloadBusy.value = `evaluator:${assignmentId}`;
+  try {
+    await hackatones.downloadEvaluator(id, assignmentId);
+    notify(
+      "positive",
+      "Reconocimiento del evaluador descargado correctamente."
+    );
+    await select(id, "evaluators");
+  } catch (error) {
+    console.error(error);
+    notify(
+      errorNotificationType(error),
+      errorMessage(error, "No se pudo generar el reconocimiento del evaluador.")
+    );
+  } finally {
+    downloadBusy.value = null;
+  }
+};
+
 const downloadTeamZip = async (teamId: string) => {
-  if (!current.value || downloadBusy.value) return;
+  if (!current.value || busy.value || downloadBusy.value) return;
   const hackatonId = current.value.id;
   downloadBusy.value = teamId;
   try {

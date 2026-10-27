@@ -1,5 +1,6 @@
-import { api } from './api';
-import type { ParticipanteLogin, TipoParticipanteLogin } from './loginService';
+import { api } from "./api";
+import { cargarSesionParticipante } from "./participanteSessionService";
+import type { ParticipanteLogin, TipoParticipanteLogin } from "./loginService";
 
 export interface ReenviarQrResponse {
   mensaje: string;
@@ -8,49 +9,52 @@ export interface ReenviarQrResponse {
 
 export async function reenviarMiQr(
   tipo: TipoParticipanteLogin,
-  participante: ParticipanteLogin,
+  participante: ParticipanteLogin
 ): Promise<ReenviarQrResponse> {
+  const sesion = await cargarSesionParticipante();
+  tipo = sesion.tipo;
+  participante = sesion.participante;
   if (!participante?.id) {
-    throw new Error('No se encontró el participante en la sesión.');
+    throw new Error("No se encontró el participante en la sesión.");
   }
 
-  if (tipo === 'EXTERNO') {
+  if (tipo === "EXTERNO") {
     const response = await api.post<ReenviarQrResponse>(
-      `/externos/${participante.id}/qr-acceso/enviar-automatico`,
+      `/externos/${participante.id}/qr-acceso/enviar-automatico`
     );
 
     return response.data;
   }
 
-  if (tipo === 'NSU') {
+  if (tipo === "NSU") {
     if (!participante.registroId) {
       throw new Error(
-        'No se encontró el registro NSU del participante. Vuelve a iniciar sesión.',
+        "No se encontró el registro NSU del participante. Vuelve a iniciar sesión."
       );
     }
 
     const response = await api.post<ReenviarQrResponse>(
-      `/registro-nsu/${participante.registroId}/participantes/${participante.id}/qr-acceso/enviar-automatico`,
+      `/registro-nsu/${participante.registroId}/participantes/${participante.id}/qr-acceso/enviar-automatico`
     );
 
     return response.data;
   }
 
-  if (tipo === 'EMS') {
+  if (tipo === "EMS") {
     const response = await api.post<ReenviarQrResponse>(
-      `/ems/${participante.id}/qr-acceso/enviar-automatico`,
+      `/ems/${participante.id}/qr-acceso/enviar-automatico`
     );
 
     return response.data;
   }
 
-  if (tipo === 'UTVM') {
+  if (tipo === "UTVM") {
     const response = await api.post<ReenviarQrResponse>(
-      `/utvm/${participante.id}/qr-acceso/enviar-automatico`,
+      `/utvm/${participante.id}/qr-acceso/enviar-automatico`
     );
 
     return response.data;
   }
 
-  throw new Error('Tipo de participante no válido.');
+  throw new Error("Tipo de participante no válido.");
 }

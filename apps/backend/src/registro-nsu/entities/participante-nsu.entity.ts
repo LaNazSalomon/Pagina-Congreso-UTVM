@@ -4,10 +4,12 @@ import {
   DeleteDateColumn,
   Entity,
   ManyToOne,
+  JoinColumn,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { RegistroNsu } from './registro-nsu.entity';
+import { Congreso } from '../../congreso/entities/congreso.entity';
 
 @Entity('participante_nsu')
 export class ParticipanteNsu {
@@ -38,8 +40,18 @@ export class ParticipanteNsu {
   @Column({ type: 'varchar', length: 20 })
   telefono!: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'text' })
   dias!: string;
+
+  @Column({ type: 'uuid', name: 'congreso_id', nullable: true })
+  congresoId!: string | null;
+
+  @ManyToOne(() => Congreso, { nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'congreso_id' })
+  congreso?: Congreso | null;
+
+  @Column('uuid', { array: true, nullable: true })
+  diaEventoIds!: string[] | null;
 
   @Column({ type: 'numeric', precision: 10, scale: 2, default: 0 })
   monto_individual!: number;
