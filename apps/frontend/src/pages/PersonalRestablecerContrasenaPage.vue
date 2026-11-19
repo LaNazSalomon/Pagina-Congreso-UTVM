@@ -1,17 +1,18 @@
 <template>
-  <q-page class="flex flex-center q-pa-md personal-reset">
-    <q-card flat bordered class="reset-card q-pa-md">
-      <q-card-section>
-        <q-icon name="lock_reset" color="primary" size="42px" />
-        <h1 class="text-h5 q-mb-sm">{{
+  <q-page class="personal-page personal-reset">
+    <q-card flat bordered class="personal-card personal-card--reset">
+      <q-card-section class="personal-card__intro">
+        <span class="personal-card__icon"><q-icon name="lock_reset" size="34px" /></span>
+        <span class="personal-card__eyebrow">PERSONAL DEL CONGRESO</span>
+        <h1>{{
           completado ? "Contraseña guardada" : "Elige tu nueva contraseña"
         }}</h1>
-        <p v-if="!completado" class="text-grey-8"
+        <p v-if="!completado" class="personal-card__description"
           >Escríbela dos veces. El enlace solo se puede usar una vez y vence en
           30 minutos.</p
         >
       </q-card-section>
-      <q-card-section>
+      <q-card-section class="personal-card__content">
         <q-linear-progress v-if="cargando" indeterminate color="primary" />
         <q-banner
           v-if="error"
@@ -26,17 +27,18 @@
             Inicia sesión con tu correo y nueva contraseña.</p
           >
           <q-btn
-            color="primary"
+            class="personal-primary-btn full-width"
             no-caps
-            class="full-width"
             to="/personal/acceso"
             label="Ir al inicio de sesión"
           />
         </template>
-        <q-form v-else-if="valido" @submit="guardar" class="q-gutter-md">
+        <q-form v-else-if="valido" @submit="guardar" class="personal-form">
           <q-input
             v-model="contrasena"
             outlined
+            :dark="!isLight"
+            class="personal-field"
             label="Nueva contraseña"
             :type="mostrar ? 'text' : 'password'"
             autocomplete="new-password"
@@ -66,6 +68,8 @@
           <q-input
             v-model="confirmacion"
             outlined
+            :dark="!isLight"
+            class="personal-field"
             label="Confirmar contraseña"
             :type="mostrar ? 'text' : 'password'"
             autocomplete="new-password"
@@ -77,16 +81,15 @@
             ]"
           />
           <q-btn
-            color="primary"
             no-caps
             type="submit"
             label="Guardar nueva contraseña"
-            class="full-width"
+            class="personal-primary-btn full-width"
             :loading="ocupado"
           />
         </q-form>
         <template v-else-if="!cargando">
-          <p class="text-grey-8"
+          <p class="personal-card__description"
             >Abre el enlace más reciente que recibiste por correo. Si venció,
             pide a un administrador que te envíe otro.</p
           >
@@ -95,7 +98,7 @@
             no-caps
             to="/personal/acceso"
             label="Ir al inicio de sesión"
-            class="full-width"
+            class="personal-text-btn full-width"
           />
         </template>
       </q-card-section>
@@ -106,10 +109,12 @@
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { isAxiosError } from "axios";
+import { useThemeMode } from "../composables/useThemeMode";
 import { api } from "../services/api";
 import { errorPersonal } from "../services/personalService";
 const route = useRoute();
 const router = useRouter();
+const { isLight } = useThemeMode();
 // El fragmento no se envía al servidor web ni como Referer. Se retira de la URL.
 let token = new URLSearchParams(route.hash.slice(1)).get("token") || "";
 const contrasena = ref("");
@@ -161,14 +166,3 @@ async function guardar() {
   }
 }
 </script>
-<style scoped>
-.personal-reset {
-  background: #f3f7f5;
-}
-.reset-card {
-  color: #1d2b28;
-  color-scheme: light;
-  width: min(100%, 500px);
-  border-radius: 18px;
-}
-</style>

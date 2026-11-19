@@ -73,6 +73,11 @@ async function main() {
   }
   for (const value of ["/validar", `/acceso/qr/${token}`])
     assert.equal(router.resolve(value).meta.rolPersonal, "VALIDADOR");
+  assert.equal(router.resolve("/noticias").matched.at(-1).path, "/noticias");
+  assert.equal(
+    router.resolve("/noticias/aviso-del-congreso").matched.at(-1).path,
+    "/noticias/:slug"
+  );
   for (const value of [
     "/",
     "/login",
@@ -80,7 +85,9 @@ async function main() {
     "/personal/restablecer-contrasena",
     "/registro-externo",
     "/registro_nsu",
-    "/agenda"
+    "/agenda",
+    "/noticias",
+    "/noticias/aviso-del-congreso"
   ]) {
     const resolved = router.resolve(value);
     assert.ok(resolved.matched.length, value);

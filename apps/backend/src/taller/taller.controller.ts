@@ -8,6 +8,7 @@ import {
   Param,
   Delete,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { TallerService } from './services/taller.service';
 import { CreateTallerDto } from './dto/create-taller.dto';
@@ -24,8 +25,8 @@ export class TallerController {
 
   @Publico()
   @Get()
-  findAll() {
-    return this.tallerService.findAllTalleres();
+  findAll(@Query('congresoId', new ParseUUIDPipe({ optional: true })) congresoId?: string) {
+    return this.tallerService.findAllTalleres(congresoId);
   }
 
   @Publico()

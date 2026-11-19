@@ -122,6 +122,8 @@
       </aside>
     </section>
 
+    <NoticiasCarrusel :congreso-id="congresoActivo?.id" />
+
     <section class="metrics-section">
       <div class="section-heading">
         <div class="section-badge">Numeralia</div>
@@ -403,6 +405,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import type { CSSProperties } from 'vue';
 import { api } from '@/services/api';
+import NoticiasCarrusel from '@/components/noticias/NoticiasCarrusel.vue';
 
 interface ApiListResponse<T> {
   data?: T[];

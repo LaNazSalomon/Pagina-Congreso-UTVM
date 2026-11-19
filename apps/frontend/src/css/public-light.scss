@@ -1,0 +1,267 @@
+// Public theme overrides. The dark palette remains the default in each page.
+body.theme-light {
+  .public-layout {
+    background: #f3f8f5;
+    color: #17372d;
+  }
+
+  .public-header {
+    background: rgba(249, 253, 250, 0.96);
+    color: #17372d;
+    border-bottom-color: #d7e6dd;
+    box-shadow: 0 8px 24px rgba(16, 57, 41, 0.08);
+  }
+
+  .public-brand,
+  .brand-text {
+    color: #17372d;
+  }
+
+  .brand-mark {
+    color: #087b51;
+    background: #e5f5eb;
+    border-color: #c2e4d0;
+  }
+
+  .public-layout .nav-btn,
+  .public-layout .nav-btn-cta,
+  .public-layout .nav-btn-admin,
+  .public-layout .nav-btn-session {
+    color: #355d4c !important;
+  }
+
+  .public-layout .nav-btn:hover,
+  .public-layout .nav-btn-active,
+  .public-layout .nav-btn-cta.nav-btn-active,
+  .public-layout .nav-btn-admin.nav-btn-active,
+  .public-layout .nav-btn-session:hover {
+    color: #087b51 !important;
+  }
+
+  .public-layout .nav-btn-logout,
+  .public-layout .nav-btn-logout:hover {
+    color: #a83232 !important;
+  }
+
+  .public-layout .nav-btn-active .q-icon {
+    color: #087b51;
+    filter: none;
+  }
+
+  .public-theme-toggle,
+  .mobile-menu-btn {
+    color: #176445;
+    background: #e9f6ee !important;
+    border-color: #c5e5d2 !important;
+  }
+
+  .public-drawer {
+    background: #f9fdfa !important;
+    color: #17372d !important;
+    border-right-color: #d7e6dd;
+  }
+
+  .public-drawer .drawer-header {
+    background: #eef7f1;
+    border-bottom-color: #d7e6dd;
+  }
+
+  .public-drawer .drawer-title,
+  .public-drawer .drawer-item,
+  .public-drawer .drawer-item .q-item__label {
+    color: #17372d !important;
+  }
+
+  .public-drawer .drawer-subtitle {
+    color: #557263;
+  }
+
+  .public-drawer .drawer-item {
+    background: #fff;
+    border-color: #dfebe3;
+  }
+
+  .public-drawer .drawer-item-active {
+    background: #e1f4e9;
+    border-color: #b7dec6;
+  }
+
+  .public-drawer .drawer-item-cta {
+    background: #dcf6e6;
+  }
+
+  .public-drawer .drawer-item .q-icon {
+    color: #087b51;
+  }
+
+  .public-drawer .drawer-item-logout,
+  .public-drawer .drawer-item-logout .q-item__label,
+  .public-drawer .drawer-item-logout .q-icon {
+    color: #a83232 !important;
+  }
+
+  .public-drawer .drawer-close {
+    color: #176445;
+    background: #e6f3eb !important;
+    border-color: #c5e5d2;
+  }
+
+  .public-home-page {
+    color: #17372d;
+    background:
+      radial-gradient(circle at 15% 12%, rgba(11, 150, 91, 0.09), transparent 30%),
+      radial-gradient(circle at 88% 20%, rgba(11, 150, 91, 0.07), transparent 32%),
+      linear-gradient(135deg, #f7fbf8, #ecf5ef 52%, #f7fbf8);
+  }
+
+  .public-home-page .hero-title,
+  .public-home-page .preview-title,
+  .public-home-page .preview-stat-value,
+  .public-home-page .section-heading h2,
+  .public-home-page .panelists-heading h2,
+  .public-home-page .metric-value,
+  .public-home-page .metric-card h3,
+  .public-home-page .home-feature-card h3,
+  .public-home-page .home-activity h3,
+  .public-home-page .panelist-info-home h3,
+  .public-home-page .home-cta h2,
+  .public-home-page .business-forums-heading h2 {
+    color: #143a2b;
+    text-shadow: none;
+  }
+
+  .public-home-page .hero-description,
+  .public-home-page .preview-text,
+  .public-home-page .preview-stat-label,
+  .public-home-page .section-heading p,
+  .public-home-page .panelists-heading p,
+  .public-home-page .metric-card p,
+  .public-home-page .home-feature-card p,
+  .public-home-page .panelist-info-home p,
+  .public-home-page .business-forums-heading p {
+    color: #496757;
+  }
+
+  .public-home-page .hero-eyebrow,
+  .public-home-page .section-badge,
+  .public-home-page .panelists-kicker,
+  .public-home-page .preview-badge,
+  .public-home-page .home-feature-card span,
+  .public-home-page .home-link-btn,
+  .public-home-page .home-cta span,
+  .public-home-page .business-forums-heading span {
+    color: #087b51 !important;
+  }
+
+  .public-home-page .hero-meta-item,
+  .public-home-page .hero-preview-card,
+  .public-home-page .metric-card,
+  .public-home-page .home-feature-card,
+  .public-home-page .home-preview-card,
+  .public-home-page .home-cta,
+  .public-home-page .business-forum-card {
+    color: #17372d;
+    background: #fff;
+    border-color: #d2e6d8;
+    box-shadow: 0 14px 34px rgba(22, 76, 47, 0.08);
+  }
+
+  .public-home-page .preview-stat,
+  .public-home-page .home-activity,
+  .public-home-page .home-empty {
+    color: #496757;
+    background: #f2f8f3;
+    border-color: #dfebe3;
+  }
+
+  .public-home-page .metric-icon,
+  .public-home-page .feature-icon,
+  .public-home-page .activity-date {
+    color: #087b51;
+    background: #e8f6ec;
+    border-color: #cbe6d3;
+  }
+
+  .public-home-page .hero-meta-item .q-icon,
+  .public-home-page .activity-date span,
+  .public-home-page .panelist-info-home span {
+    color: #087b51;
+  }
+
+  .public-home-page .activity-date strong {
+    color: #143a2b;
+  }
+
+  .public-home-page .btn-secondary {
+    color: #087b51 !important;
+    background: #fff !important;
+    border-color: #75ba92 !important;
+  }
+
+  .public-home-page .btn-link {
+    color: #176445 !important;
+  }
+
+  .public-home-page .panelist-image-wrap,
+  .public-home-page .panelist-image-placeholder {
+    color: #143a2b;
+    background: #e5f3e9;
+    border-color: #cbe6d3;
+  }
+
+  .public-home-page .panelist-corner-icon {
+    background: #fff;
+    color: #087b51;
+  }
+
+  .public-home-page .business-forums-section {
+    color: #17372d;
+    background: linear-gradient(180deg, #eaf4ed, #f7fbf8);
+  }
+
+  .public-home-page .business-forum-placeholder {
+    color: #176445;
+    background: #e5f3e9;
+  }
+
+  .public-home-page .news-section {
+    color: #17372d;
+    --news-muted: #496757;
+    --news-accent: #087b51;
+    --news-border: #d2e6d8;
+  }
+
+  .public-home-page .news-carousel {
+    background: #fff;
+    box-shadow: 0 14px 34px rgba(22, 76, 47, 0.08);
+  }
+
+  .public-home-page .news-carousel__position > span {
+    color: #17372d;
+  }
+
+  .public-home-page .news-cover__fallback {
+    color: #176445;
+    background: #e5f3e9;
+  }
+
+  .logout-dialog-card {
+    color: #17372d;
+    background: #fff !important;
+    border-color: #d2e6d8;
+  }
+
+  .logout-dialog-header h3 {
+    color: #143a2b;
+  }
+
+  .logout-dialog-header p,
+  .logout-cancel-btn {
+    color: #496757 !important;
+  }
+
+  .logout-dialog-actions {
+    background: #f2f8f3;
+    border-top-color: #d2e6d8;
+  }
+}

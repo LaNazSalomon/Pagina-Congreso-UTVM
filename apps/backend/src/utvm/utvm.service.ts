@@ -156,7 +156,13 @@ export class UtvmService {
     return this.qrEnvio.enviar(ParticipanteTipo.UTVM, String(id), dto);
   }
 
-  enviarQrAccesoAutomatico(id: number) {
-    return this.qrEnvio.enviarAutomatico(ParticipanteTipo.UTVM, String(id));
+  async enviarQrAccesoAutomatico(id: number) {
+    const participante = await this.findOne(id);
+    return this.qrEnvio.enviarAutomatico(
+      ParticipanteTipo.UTVM,
+      String(id),
+      undefined,
+      { congresoId: participante.congresoId, creadoEn: participante.created_at },
+    );
   }
 }

@@ -47,8 +47,8 @@
       <div>
         <div class="text-h6">Evaluadores asignados</div>
         <div class="text-caption text-secondary">
-          Descarga los reconocimientos cuantas veces lo necesites. El ZIP
-          incluye todos los evaluadores guardados.
+          Descarga los reconocimientos cuantas veces lo necesites. La plantilla
+          activa se aplica también a los ya emitidos; el ZIP incluye todos los evaluadores.
         </div>
       </div>
       <q-btn

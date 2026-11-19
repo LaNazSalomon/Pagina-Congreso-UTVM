@@ -26,6 +26,7 @@ import { ReconocimientoModule } from './reconocimiento/reconocimiento.module';
 import { HealthModule } from './health/health.module';
 import { HackatonModule } from './hackaton/hackaton.module';
 import { PersonalModule } from './personal/personal.module';
+import { PagosModule } from './pagos/pagos.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { PersonalModule } from './personal/personal.module';
     ReconocimientoModule,
     HealthModule,
     HackatonModule,
+    PagosModule,
   ],
   controllers: [],
   providers: [

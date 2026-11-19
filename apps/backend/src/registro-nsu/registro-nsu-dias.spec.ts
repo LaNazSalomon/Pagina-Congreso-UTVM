@@ -13,6 +13,7 @@ describe('Registro NSU: fechas e importe', () => {
       {} as never,
       comprobantes as never,
       {
+        tarifa: jest.fn().mockResolvedValue(REGISTRO_TARIFAS.NSU),
         validarSeleccion: jest.fn().mockResolvedValue({
           congresoId: 'congreso',
           diaEventoIds: ['primero', 'segundo'],

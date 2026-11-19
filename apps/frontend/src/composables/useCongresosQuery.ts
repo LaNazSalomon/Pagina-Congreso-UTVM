@@ -2,6 +2,8 @@ import { ref } from 'vue';
 import { api } from '../services/api';
 import type { Congreso, CongresoPayload } from '../types';
 
+export const congresosRevision = ref(0);
+
 export function useCongresosQuery() {
   const data = ref<Congreso[]>([]);
   const isRefreshing = ref(false);
@@ -37,16 +39,20 @@ export function useCongresosQuery() {
 
   const create = async (payload: CongresoPayload) => {
     const response = await api.post<Congreso>('congreso', payload);
+    congresosRevision.value += 1;
     return response.data;
   };
 
   const update = async (id: string, payload: Partial<CongresoPayload>) => {
     const response = await api.patch<Congreso>(`congreso/${id}`, payload);
+    congresosRevision.value += 1;
     return response.data;
   };
 
   const remove = async (id: string) => {
-    return api.delete(`congreso/${id}`);
+    const response = await api.delete(`congreso/${id}`);
+    congresosRevision.value += 1;
+    return response;
   };
 
   return {

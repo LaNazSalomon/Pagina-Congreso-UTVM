@@ -1,14 +1,16 @@
 <template>
-  <q-page class="q-pa-md scanner-page">
-    <q-card flat bordered class="scanner-card q-mx-auto">
-      <q-card-section
-        ><h1 class="text-h5 q-my-sm">Escanear QR de acceso</h1
-        ><p
+  <q-page class="personal-page scanner-page">
+    <q-card flat bordered class="personal-card personal-card--scanner">
+      <q-card-section class="personal-card__intro">
+        <span class="personal-card__icon"><q-icon name="qr_code_scanner" size="34px" /></span>
+        <span class="personal-card__eyebrow">CONTROL DE ACCESO</span>
+        <h1>Escanear QR de acceso</h1>
+        <p class="personal-card__description"
           >Apunta al QR del participante. Después podrás revisar sus datos y
           confirmar la entrada.</p
         ></q-card-section
       >
-      <q-card-section>
+      <q-card-section class="personal-card__content">
         <q-banner
           v-if="error"
           class="bg-red-1 text-negative q-mb-md"
@@ -26,8 +28,7 @@
           aria-label="Vista de la cámara para escanear QR"
         />
         <q-btn
-          color="primary"
-          class="full-width q-mt-md"
+          class="personal-primary-btn full-width q-mt-md"
           :icon="camaraActiva ? 'stop' : 'photo_camera'"
           :label="camaraActiva ? 'Detener cámara' : 'Activar cámara'"
           :loading="iniciando"
@@ -35,22 +36,27 @@
           @click="camaraActiva ? detener() : iniciar()"
         />
       </q-card-section>
-      <q-separator />
-      <q-card-section
-        ><q-form @submit="abrir(codigo)"
-          ><q-input
+      <q-separator class="personal-separator" />
+      <q-card-section class="personal-card__content personal-card__content--secondary">
+        <q-form @submit="abrir(codigo)" class="personal-form">
+          <q-input
             v-model.trim="codigo"
             outlined
+            :dark="!isLight"
+            class="personal-field"
             label="Enlace o código QR"
-            hint="También puedes pegar el enlace o usar un lector externo." /><q-btn
+            hint="También puedes pegar el enlace o usar un lector externo."
+          />
+          <q-btn
             type="submit"
             outline
-            color="primary"
             label="Revisar QR"
             no-caps
-            class="full-width q-mt-lg"
-            :disable="!codigo || iniciando" /></q-form
-      ></q-card-section>
+            class="personal-outline-btn full-width"
+            :disable="!codigo || iniciando"
+          />
+        </q-form>
+      </q-card-section>
     </q-card>
   </q-page>
 </template>
@@ -58,8 +64,10 @@
 import { onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import jsQR from "jsqr";
+import { useThemeMode } from "../composables/useThemeMode";
 import { extraerTokenQr } from "../services/qrScan";
 const router = useRouter();
+const { isLight } = useThemeMode();
 const video = ref<HTMLVideoElement | null>(null);
 const camaraActiva = ref(false);
 const iniciando = ref(false);
@@ -152,15 +160,6 @@ function abrir(value: string) {
 }
 </script>
 <style scoped>
-.scanner-page {
-  background: #f3f7f5;
-}
-.scanner-card {
-  color: #1d2b28;
-  color-scheme: light;
-  max-width: 620px;
-  border-radius: 18px;
-}
 .scanner-video {
   width: 100%;
   max-height: 440px;

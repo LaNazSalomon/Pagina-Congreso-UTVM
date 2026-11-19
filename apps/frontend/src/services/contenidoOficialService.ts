@@ -9,6 +9,7 @@ import type {
   DestinoImagenContenido,
   NoticiaContenido,
   NoticiaContenidoPayload,
+  NoticiaPublicaDetalle,
   PaginaOficialContenido,
   SeccionContenido,
   SeccionContenidoPayload
@@ -126,6 +127,14 @@ export const contenidoOficialService = {
 
   removeImage(destino: DestinoImagenContenido, id: string) {
     return api.delete<string>(`${CONTENT_BASE}/imagenes/${destino}/${id}`);
+  },
+
+  async getNoticiaPublica(slug: string) {
+    return (
+      await api.get<NoticiaPublicaDetalle>(
+        `pagina-oficial/noticias/${encodeURIComponent(slug)}`
+      )
+    ).data;
   },
 
   async getPaginaOficial(congresoId: string) {

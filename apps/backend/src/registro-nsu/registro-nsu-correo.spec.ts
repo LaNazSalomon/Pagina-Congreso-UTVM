@@ -113,6 +113,7 @@ describe('NSU: reintento de verificación sin duplicados', () => {
       { transaction } as never,
       comprobantes as never,
       {
+        tarifa: jest.fn().mockResolvedValue(100),
         validarSeleccion: jest.fn().mockResolvedValue({
           congresoId: 'congreso',
           diaEventoIds: ['dia'],

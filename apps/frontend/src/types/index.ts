@@ -30,6 +30,7 @@ export interface Reconocimiento {
   congreso?: ReconocimientoReferencia | null;
   hackaton?: ReconocimientoReferencia | null;
   hackaton_equipo?: ReconocimientoReferencia | null;
+  plantilla?: { id: string; version: number } | null;
 }
 
 export type HackatonResultado =
@@ -312,6 +313,7 @@ export interface ArchivoMultimedia {
 
 export interface ParticipanteEms {
   id: number;
+  congresoId?: string | null;
   nombres: string;
   apellidoPaterno: string;
   apellidoMaterno?: string | null;
@@ -330,6 +332,7 @@ export type ParticipanteEmsPayload = Omit<
 
 export interface ParticipanteUtvm {
   id: number;
+  congresoId?: string | null;
   nombres: string;
   apellidoPaterno: string;
   apellidoMaterno?: string | null;

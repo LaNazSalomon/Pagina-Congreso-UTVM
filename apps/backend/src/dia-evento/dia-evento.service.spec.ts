@@ -50,6 +50,9 @@ describe('DiaEventoService: fechas del registro', () => {
           throw error;
         }),
       } as never,
+      {
+        tarifas: jest.fn().mockResolvedValue({ EXTERNO: 250, NSU: 100 }),
+      } as never,
     );
     return { service, stored, save, congreso };
   }

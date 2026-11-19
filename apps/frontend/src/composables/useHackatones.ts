@@ -16,16 +16,18 @@ export function useHackatones() {
   const items = ref<Hackaton[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
-  const load = async () => {
+  let loadRequest = 0;
+  const load = async (congresoId?: string) => {
+    const request = ++loadRequest;
     loading.value = true;
     error.value = null;
     try {
-      const { data } = await api.get("hackatones", { params: { limit: 100 } });
-      items.value = data.data;
+      const { data } = await api.get("hackatones", { params: { limit: 100, ...(congresoId ? { congresoId } : {}) } });
+      if (request === loadRequest) items.value = data.data;
     } catch {
-      error.value = "No se pudieron cargar los Hackatones.";
+      if (request === loadRequest) error.value = "No se pudieron cargar los Hackatones.";
     } finally {
-      loading.value = false;
+      if (request === loadRequest) loading.value = false;
     }
   };
   const get = async (id: string) =>

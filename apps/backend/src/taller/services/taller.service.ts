@@ -41,8 +41,9 @@ export class TallerService {
     );
   }
 
-  async findAllTalleres(): Promise<TallerConInscritos[]> {
+  async findAllTalleres(congresoId?: string): Promise<TallerConInscritos[]> {
     const talleres = await this.repository.find({
+      ...(congresoId ? { where: { congreso: { id: congresoId } } } : {}),
       relations: [
         'congreso',
         'ubicacion',

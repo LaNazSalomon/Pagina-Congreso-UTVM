@@ -248,6 +248,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { api } from '@/services/api';
+import { obtenerCongresoPublicoActual } from '@/services/congresoPublicoService';
 
 const router = useRouter();
 
@@ -460,10 +461,17 @@ async function cargarAgenda() {
   errorAgenda.value = '';
 
   try {
+    const congresoId = await obtenerCongresoPublicoActual();
+    if (!congresoId) {
+      eventos.value = [];
+      diaActivo.value = '';
+      return;
+    }
+
     const [conferenciasResponse, talleresResponse, ubicacionesResponse] =
       await Promise.all([
-        api.get<ConferenciaApi[]>('/conferencias'),
-        api.get<TallerApi[]>('/taller'),
+        api.get<ConferenciaApi[]>('/conferencias', { params: { congresoId } }),
+        api.get<TallerApi[]>('/taller', { params: { congresoId } }),
         api.get<UbicacionApi[]>('/ubicacion'),
       ]);
 

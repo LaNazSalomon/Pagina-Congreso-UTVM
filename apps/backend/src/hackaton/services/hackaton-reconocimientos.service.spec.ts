@@ -82,6 +82,17 @@ describe('HackatonReconocimientosService: evaluadores', () => {
     const renderer = {
       render: jest.fn().mockResolvedValue(Buffer.from('%PDF-prueba')),
     };
+    const cached = new Map<string, Buffer>();
+    const recognitionService = {
+      generatePdf: jest.fn(async (id: string) => {
+        let pdf = cached.get(id);
+        if (!pdf) {
+          pdf = (await renderer.render(id)) as Buffer;
+          cached.set(id, pdf);
+        }
+        return { pdf };
+      }),
+    };
     const service = new HackatonReconocimientosService(
       {
         getRepository: jest.fn((entity: unknown) => {
@@ -92,7 +103,7 @@ describe('HackatonReconocimientosService: evaluadores', () => {
         }),
       } as never,
       recognitionRepository as never,
-      renderer as never,
+      recognitionService as never,
       {} as never,
     );
     return {
@@ -117,7 +128,7 @@ describe('HackatonReconocimientosService: evaluadores', () => {
     expect(second.zip.readUInt16LE(second.zip.length - 14)).toBe(2);
     expect(second.zip.toString()).toContain('Ana-Perez.pdf');
     expect(stored.size).toBe(2);
-    expect(renderer.render).toHaveBeenCalledTimes(4);
+    expect(renderer.render).toHaveBeenCalledTimes(2);
   });
 
   it('incluye los evaluadores agregados después de la primera descarga y del cierre', async () => {
@@ -153,13 +164,7 @@ describe('HackatonReconocimientosService: evaluadores', () => {
     expect(second.pdf.toString()).toBe('%PDF-prueba');
     expect(stored.size).toBe(1);
     expect(scopedIds).toHaveBeenLastCalledWith(['asignacion-ana']);
-    expect(renderer.render).toHaveBeenCalledWith(
-      'HACKATON_EVALUADOR',
-      'Ana Pérez',
-      {
-        participacion: 'Participación como evaluador de Hackatón de prueba',
-      },
-    );
+    expect(renderer.render).toHaveBeenCalledTimes(1);
   });
 
   it('rechaza un evaluador de otro Hackatón', async () => {

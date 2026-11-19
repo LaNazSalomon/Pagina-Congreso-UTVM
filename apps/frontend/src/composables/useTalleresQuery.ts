@@ -162,21 +162,25 @@ export function useTalleresQuery() {
   const data = ref<Taller[]>([]);
   const isRefreshing = ref(false);
   const error = ref<string | null>(null);
+  let loadRequest = 0;
 
-  const load = async (): Promise<void> => {
+  const load = async (congresoId?: string): Promise<void> => {
+    const request = ++loadRequest;
     isRefreshing.value = true;
     error.value = null;
 
     try {
       const response =
-        await api.get<TallerApiResponse[]>("/taller");
+        await api.get<TallerApiResponse[]>("/taller", {
+          params: congresoId ? { congresoId } : undefined
+        });
 
-      data.value = response.data.map(normalizeTaller);
+      if (request === loadRequest) data.value = response.data.map(normalizeTaller);
     } catch (err) {
-      error.value = "Error cargando talleres";
+      if (request === loadRequest) error.value = "Error cargando talleres";
       console.error(err);
     } finally {
-      isRefreshing.value = false;
+      if (request === loadRequest) isRefreshing.value = false;
     }
   };
 

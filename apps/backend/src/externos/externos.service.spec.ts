@@ -68,6 +68,14 @@ describe('ExternosService.create', () => {
         typeof nodemailer.createTransport
       >);
 
+    const diasEvento = {
+      tarifa: jest.fn().mockResolvedValue(250),
+      validarSeleccion: jest.fn().mockResolvedValue({
+        congresoId: dto.congresoId,
+        diaEventoIds: dto.diaEventoIds,
+        fechas: dto.dias,
+      }),
+    };
     const service = new ExternosService(
       repository as unknown as Repository<Externo>,
       config as unknown as ConfigService,
@@ -75,13 +83,7 @@ describe('ExternosService.create', () => {
       {} as ParticipanteQrEnvioService,
       dataSource as unknown as DataSource,
       comprobantes as unknown as ComprobanteService,
-      {
-        validarSeleccion: jest.fn().mockResolvedValue({
-          congresoId: dto.congresoId,
-          diaEventoIds: dto.diaEventoIds,
-          fechas: dto.dias,
-        }),
-      } as unknown as DiaEventoService,
+      diasEvento as unknown as DiaEventoService,
     );
     return {
       service,
@@ -90,6 +92,7 @@ describe('ExternosService.create', () => {
       dataSource,
       settings,
       sendMail,
+      diasEvento,
     };
   }
 
@@ -120,6 +123,21 @@ describe('ExternosService.create', () => {
         to: 'ana@example.com',
         html: expect.stringContaining('/api/externos/verificar-correo/'),
       }),
+    );
+  });
+
+  it('usa la tarifa vigente del congreso para un registro nuevo', async () => {
+    const { service, repository, diasEvento } = setup();
+    diasEvento.tarifa.mockResolvedValue(310.55);
+    diasEvento.validarSeleccion.mockResolvedValue({
+      congresoId: dto.congresoId,
+      diaEventoIds: ['dia-1', 'dia-2', 'dia-3'],
+      fechas: ['2026-10-14', '2026-10-15', '2026-10-16'],
+    });
+    await service.create({ ...dto, total: 931.65 }, file);
+    expect(diasEvento.tarifa).toHaveBeenCalledWith(dto.congresoId, 'EXTERNO');
+    expect(repository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ total: 931.65 }),
     );
   });
 

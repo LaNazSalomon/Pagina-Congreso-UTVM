@@ -5,12 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { createHash } from 'node:crypto';
 import { DataSource, Repository } from 'typeorm';
 import { Reconocimiento } from '../../reconocimiento/entities/reconocimiento.entity';
 import { ReconocimientoEstado } from '../../reconocimiento/enums/reconocimiento-estado.enum';
 import { ReconocimientoTipo } from '../../reconocimiento/enums/reconocimiento-tipo.enum';
-import { ReconocimientoRendererService } from '../../reconocimiento/services/reconocimiento-renderer.service';
+import { ReconocimientoService } from '../../reconocimiento/reconocimiento.service';
 import { ParticipanteResolverService } from '../../participante-acceso/participante-resolver.service';
 import { HackatonEquipo } from '../entities/hackaton-equipo.entity';
 import { HackatonEvaluador } from '../entities/hackaton-evaluador.entity';
@@ -24,7 +23,7 @@ export class HackatonReconocimientosService {
     private readonly dataSource: DataSource,
     @InjectRepository(Reconocimiento)
     private readonly reconocimientos: Repository<Reconocimiento>,
-    private readonly renderer: ReconocimientoRendererService,
+    private readonly recognitionService: ReconocimientoService,
     private readonly participantResolver: ParticipanteResolverService,
   ) {}
   async evaluadoresZip(hackatonId: string) {
@@ -49,14 +48,7 @@ export class HackatonReconocimientosService {
         }),
       ),
     );
-    const files = await this.renderLimited(
-      jobs.map((recognition) => ({
-        recognition,
-        context: {
-          participacion: `Participación como evaluador de ${hackaton.nombre}`,
-        },
-      })),
-    );
+    const files = await this.renderLimited(jobs);
     await this.markEvaluatorsIssued(assignments.map((item) => item.id));
     return {
       zip: buildZip(files),
@@ -81,14 +73,7 @@ export class HackatonReconocimientosService {
       name: assignment.ponente.nombre,
     });
     const [file] = await this.renderLimited(
-      [
-        {
-          recognition,
-          context: {
-            participacion: `Participación como evaluador de ${assignment.hackaton.nombre}`,
-          },
-        },
-      ],
+      [recognition],
       'No fue posible generar el reconocimiento del evaluador; puede reintentarlo',
     );
     await this.markEvaluatorsIssued([assignment.id]);
@@ -135,12 +120,7 @@ export class HackatonReconocimientosService {
       ),
     );
     const label = HACKATON_RESULTADO_LABEL[team.resultado];
-    const files = await this.renderLimited(
-      jobs.map((recognition) => ({
-        recognition,
-        context: { equipo: team.nombre, resultado: label },
-      })),
-    );
+    const files = await this.renderLimited(jobs);
     await this.dataSource.getRepository(HackatonEquipo).update(team.id, {
       reconocimientos_emitidos_at:
         team.reconocimientos_emitidos_at ?? new Date(),
@@ -194,10 +174,7 @@ export class HackatonReconocimientosService {
     return this.reconocimientos.findOneByOrFail({ clave_emision: input.key });
   }
   private async renderLimited(
-    jobs: {
-      recognition: Reconocimiento;
-      context: { equipo?: string; resultado?: string; participacion?: string };
-    }[],
+    jobs: Reconocimiento[],
     errorMessage = 'No fue posible generar el lote completo; puede reintentarlo',
   ) {
     const results = Array.from<{ name: string; data: Buffer } | undefined>({
@@ -208,33 +185,11 @@ export class HackatonReconocimientosService {
       while (cursor < jobs.length) {
         const index = cursor++;
         const job = jobs[index];
-        try {
-          const pdf = await this.renderer.render(
-            job.recognition.tipo,
-            job.recognition.nombre_destinatario,
-            job.context,
-          );
-          await this.reconocimientos.update(job.recognition.id, {
-            estado: ReconocimientoEstado.EMITIDO,
-            intentos: () => 'intentos + 1',
-            primera_fecha_emision: () =>
-              'COALESCE(primera_fecha_emision, CURRENT_TIMESTAMP)',
-            ultimo_error: null,
-            ultimo_pdf_sha256: createHash('sha256').update(pdf).digest('hex'),
-          });
-          results[index] = {
-            name: `${this.safe(job.recognition.nombre_destinatario)}.pdf`,
-            data: pdf,
-          };
-        } catch (error) {
-          await this.reconocimientos.update(job.recognition.id, {
-            estado: () =>
-              "CASE WHEN estado = 'EMITIDO' THEN estado ELSE 'FALLIDO' END",
-            intentos: () => 'intentos + 1',
-            ultimo_error: error instanceof Error ? error.stack : String(error),
-          });
-          throw error;
-        }
+        const { pdf } = await this.recognitionService.generatePdf(job.id);
+        results[index] = {
+          name: `${this.safe(job.nombre_destinatario)}.pdf`,
+          data: pdf,
+        };
       }
     };
     try {

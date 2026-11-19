@@ -24,7 +24,7 @@ import { ParticipanteTipo } from '../participante-acceso/participante-tipo.enum'
 import { ComprobanteService } from '../comprobante/comprobante.service';
 import type { ArchivoComprobante } from '../comprobante/entities/archivo-comprobante.entity';
 import { DiaEventoService } from '../dia-evento/dia-evento.service';
-import { REGISTRO_TARIFAS } from '../dia-evento/registro-tarifas.constant';
+import { calcularTotalRegistro } from '../dia-evento/registro-tarifas.constant';
 
 @Injectable()
 export class ExternosService {
@@ -72,11 +72,13 @@ export class ExternosService {
       createExternoDto.congresoId,
       createExternoDto.diaEventoIds,
     );
-    const totalEsperado =
-      seleccion.diaEventoIds.length * REGISTRO_TARIFAS.EXTERNO;
+    const totalEsperado = calcularTotalRegistro(
+      seleccion.diaEventoIds.length,
+      await this.diasEvento.tarifa(seleccion.congresoId, 'EXTERNO'),
+    );
     if (Number(createExternoDto.total) !== totalEsperado)
       throw new BadRequestException(
-        'El total no coincide con las fechas seleccionadas.',
+        'El precio cambió o el total no coincide con los días seleccionados. Revisa el nuevo importe antes de registrarte.',
       );
     let archivoGuardado: ArchivoComprobante | undefined;
     let externoGuardado!: Externo;
@@ -230,7 +232,13 @@ export class ExternosService {
         diaEventoIds: seleccion.diaEventoIds,
         dias: seleccion.fechas,
         total: cambioDias
-          ? seleccion.diaEventoIds.length * REGISTRO_TARIFAS.EXTERNO
+          ? calcularTotalRegistro(
+              seleccion.diaEventoIds.length,
+              externo.congresoId === seleccion.congresoId &&
+                externo.diaEventoIds?.length
+                ? Number(externo.total) / externo.diaEventoIds.length
+                : await this.diasEvento.tarifa(seleccion.congresoId, 'EXTERNO'),
+            )
           : externo.total,
       };
     }

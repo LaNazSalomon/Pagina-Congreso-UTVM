@@ -22,7 +22,7 @@ import { ParticipanteTipo } from '../participante-acceso/participante-tipo.enum'
 import { ComprobanteService } from '../comprobante/comprobante.service';
 import type { ArchivoComprobante } from '../comprobante/entities/archivo-comprobante.entity';
 import { DiaEventoService } from '../dia-evento/dia-evento.service';
-import { REGISTRO_TARIFAS } from '../dia-evento/registro-tarifas.constant';
+import { calcularTotalRegistro } from '../dia-evento/registro-tarifas.constant';
 
 @Injectable()
 export class RegistroNsuService {
@@ -113,6 +113,10 @@ export class RegistroNsuService {
         ),
       ),
     );
+    const tarifaNsu = await this.diasEvento.tarifa(
+      createRegistroNsuDto.congresoId,
+      'NSU',
+    );
     participantesDto.forEach((participante, index) => {
       const numeroParticipante = index + 1;
 
@@ -158,8 +162,10 @@ export class RegistroNsuService {
         );
       }
 
-      const montoEsperado =
-        selecciones[index].diaEventoIds.length * REGISTRO_TARIFAS.NSU;
+      const montoEsperado = calcularTotalRegistro(
+        selecciones[index].diaEventoIds.length,
+        tarifaNsu,
+      );
 
       if (Number(participante.montoNumero) !== montoEsperado) {
         throw new BadRequestException(
@@ -168,9 +174,12 @@ export class RegistroNsuService {
       }
     });
 
-    const totalGeneral = participantesDto.reduce((total, participante) => {
-      return total + Number(participante.montoNumero || 0);
-    }, 0);
+    const totalGeneral =
+      participantesDto.reduce((centavos, participante) => {
+        return (
+          centavos + Math.round(Number(participante.montoNumero || 0) * 100)
+        );
+      }, 0) / 100;
 
     let archivoGuardado: ArchivoComprobante | undefined;
     let registroGuardado!: RegistroNsu;

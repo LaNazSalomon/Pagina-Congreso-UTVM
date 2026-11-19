@@ -27,7 +27,16 @@
       </div>
 
       <div class="col-12 col-md-6">
+        <q-input
+          v-if="props.persistDraft"
+          :model-value="selectedCongress?.nombre || ''"
+          :dark="!isLight"
+          dense
+          readonly
+          label="Congreso"
+        />
         <q-select
+          v-else
           v-model="form.congreso_id"
           :options="congresoOptions"
           :dark="!isLight"
@@ -135,7 +144,7 @@
         color="primary"
         type="submit"
         :loading="props.loading"
-        :disable="props.loading || catalogsLoading || !!catalogsError"
+        :disable="props.loading || catalogsLoading || !!catalogsError || (props.persistDraft && !selectedCongressId)"
         :label="props.submitLabel"
       />
     </div>
@@ -145,6 +154,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useCongresosQuery } from "../../composables/useCongresosQuery";
+import { useAdminCongreso } from "../../composables/useAdminCongreso";
 import { useFormPersistence } from "../../composables/useFormPersistence";
 import { useThemeMode } from "../../composables/useThemeMode";
 import { useUbicacionesQuery } from "../../composables/useUbicacionesQuery";
@@ -155,6 +165,7 @@ import type {
 } from "../../types";
 
 const { isLight } = useThemeMode();
+const { selectedCongressId, selectedCongress } = useAdminCongreso();
 
 const MAX_LOGO_SIZE = 5 * 1024 * 1024;
 
@@ -245,6 +256,10 @@ watch(
   { immediate: true, deep: true }
 );
 
+watch(selectedCongressId, id => {
+  if (props.persistDraft) form.value.congreso_id = id ?? "";
+});
+
 watch(selectedLogo, file => {
   logoError.value = null;
   revokeLocalPreview();
@@ -278,7 +293,7 @@ const submit = () => {
       nombre: form.value.nombre.trim(),
       direccion: form.value.direccion.trim(),
       resena: form.value.resena.trim(),
-      congreso_id: form.value.congreso_id,
+      congreso_id: props.persistDraft ? (selectedCongressId.value ?? "") : form.value.congreso_id,
       ubicacion_id: form.value.ubicacion_id
     },
     logo: selectedLogo.value,
@@ -292,7 +307,10 @@ const clearDraft = () => {
 
 defineExpose({ clearDraft });
 
-onMounted(() => void loadCatalogs());
+onMounted(() => {
+  if (props.persistDraft) form.value.congreso_id = selectedCongressId.value ?? "";
+  void loadCatalogs();
+});
 onBeforeUnmount(revokeLocalPreview);
 </script>
 

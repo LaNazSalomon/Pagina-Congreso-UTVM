@@ -12,7 +12,7 @@
         color="primary"
         icon="add"
         label="Nuevo Hackatón"
-        :disable="busy || downloadBusy !== null"
+        :disable="busy || downloadBusy !== null || !selectedCongressId"
         @click="newHackathon"
       />
     </div>
@@ -29,7 +29,7 @@
           <q-separator />
           <q-list separator class="admin-list">
             <q-item
-              v-for="item in items"
+              v-for="item in visibleHackatones"
               :key="item.id"
               clickable
               :active="current?.id === item.id"
@@ -45,7 +45,7 @@
                 <q-icon name="chevron_right" />
               </q-item-section>
             </q-item>
-            <q-item v-if="!items.length && !initialLoading">
+            <q-item v-if="!visibleHackatones.length && !initialLoading">
               <q-item-section class="text-secondary">
                 Sin Hackatones registrados.
               </q-item-section>
@@ -87,7 +87,7 @@
                   :key="current?.id ?? 'new'"
                   ref="generalFormRef"
                   :value="payload"
-                  :congresos="congresos"
+                  :congresos="selectedCongress ? [selectedCongress] : []"
                   :loading="busy"
                   :persist-draft="editingNew"
                   @save="saveGeneral"
@@ -170,14 +170,14 @@
 
 <script setup lang="ts">
 import axios from "axios";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useQuasar } from "quasar";
 import HackatonDescargasPanel from "../../components/hackaton/HackatonDescargasPanel.vue";
 import HackatonEquiposPanel from "../../components/hackaton/HackatonEquiposPanel.vue";
 import HackatonEvaluadoresPanel from "../../components/hackaton/HackatonEvaluadoresPanel.vue";
 import HackatonGeneralForm from "../../components/hackaton/HackatonGeneralForm.vue";
 import HackatonResultadosPanel from "../../components/hackaton/HackatonResultadosPanel.vue";
-import { useCongresosQuery } from "../../composables/useCongresosQuery";
+import { useAdminCongreso } from "../../composables/useAdminCongreso";
 import { useHackatones } from "../../composables/useHackatones";
 import { usePonente } from "../../composables/usePonente";
 import { useThemeMode } from "../../composables/useThemeMode";
@@ -195,8 +195,10 @@ const $q = useQuasar();
 const { isLight } = useThemeMode();
 const hackatones = useHackatones();
 const { items } = hackatones;
-const congresosQuery = useCongresosQuery();
-const congresos = congresosQuery.data;
+const { selectedCongressId, selectedCongress } = useAdminCongreso();
+const visibleHackatones = computed(() => items.value.filter(item =>
+  item.congreso?.id === selectedCongressId.value
+));
 const evaluadoresQuery = usePonente().useGetPonentes(100, 0, "Evaluador");
 const evaluatorOptions = evaluadoresQuery.data;
 const current = ref<Hackaton | null>(null);
@@ -212,13 +214,25 @@ const teamsPanelRef = ref<DraftControl | null>(null);
 const evaluatorsPanelRef = ref<DraftControl | null>(null);
 
 const empty = (): HackatonPayload => ({
-  congreso_id: "",
+  congreso_id: selectedCongressId.value ?? "",
   nombre: "",
   descripcion: "",
   fecha_inicio: "",
   fecha_fin: ""
 });
 const payload = ref(empty());
+
+watch(selectedCongressId, async () => {
+  const congressId = selectedCongressId.value;
+  current.value = null;
+  editingNew.value = false;
+  payload.value = empty();
+  if (!congressId) return;
+  await hackatones.load(congressId);
+  if (selectedCongressId.value !== congressId) return;
+  const first = visibleHackatones.value[0];
+  if (first) await select(first.id);
+});
 
 const notify = (type: NotifyType, message: string) => {
   if (typeof $q.notify === "function") {
@@ -271,7 +285,7 @@ const run = async (
 };
 
 const refresh = async (id?: string) => {
-  await hackatones.load();
+  await hackatones.load(selectedCongressId.value ?? undefined);
   if (id) current.value = await hackatones.get(id);
 };
 
@@ -302,19 +316,21 @@ const newHackathon = () => {
 };
 
 const saveGeneral = async (value: HackatonPayload) => {
+  if (!selectedCongressId.value) return;
+  const congressValue = { ...value, congreso_id: selectedCongressId.value };
   const wasNew = !current.value;
   let savedId = current.value?.id;
   const succeeded = await run(
     async () => {
       const saved = current.value
-        ? await hackatones.update(current.value.id, value)
-        : await hackatones.create(value);
+        ? await hackatones.update(current.value.id, congressValue)
+        : await hackatones.create(congressValue);
       savedId = saved.id;
       if (wasNew) generalFormRef.value?.clearDraft();
       editingNew.value = false;
       await refresh(saved.id);
       current.value = await hackatones.get(saved.id);
-      payload.value = { ...value };
+      payload.value = congressValue;
     },
     "Hackatón guardado correctamente.",
     "No se pudo guardar el Hackatón."
@@ -531,16 +547,14 @@ onMounted(async () => {
   initialLoading.value = true;
   try {
     await Promise.all([
-      hackatones.load(),
-      congresosQuery.load(),
+      ...(selectedCongressId.value ? [hackatones.load(selectedCongressId.value)] : []),
       evaluadoresQuery.refetch()
     ]);
     const catalogError =
       hackatones.error.value ||
-      congresosQuery.error.value ||
       evaluadoresQuery.error.value;
     if (catalogError) notify("negative", catalogError);
-    if (items.value[0]) await select(items.value[0].id);
+    if (visibleHackatones.value[0]) await select(visibleHackatones.value[0].id);
   } catch (error) {
     console.error(error);
     notify("negative", "No se pudo cargar la administración de Hackatón.");

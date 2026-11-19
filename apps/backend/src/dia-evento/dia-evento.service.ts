@@ -12,6 +12,7 @@ import { ResourceLockService } from '../common/resource-lock.service';
 import { Congreso } from '../congreso/entities/congreso.entity';
 import { DiaEvento } from './entities/dia-evento.entity';
 import { REGISTRO_TARIFAS } from './registro-tarifas.constant';
+import { PagosService } from '../pagos/pagos.service';
 
 export interface DiaEventoResponse {
   id: string;
@@ -33,6 +34,7 @@ export class DiaEventoService {
     private readonly config: ConfigService,
     private readonly locks: ResourceLockService,
     private readonly dbErrors: DatabaseErrorHandlerService,
+    private readonly pagos: PagosService,
   ) {
     this.timeZone = this.config.get<string>(
       'CONGRESS_TIMEZONE',
@@ -61,6 +63,7 @@ export class DiaEventoService {
       fechaInicio: string;
       fechaFin: string;
       dias: DiaEventoResponse[];
+      tarifas: { EXTERNO: number; NSU: number };
     }>;
     for (const congreso of congresos) {
       opciones.push({
@@ -69,9 +72,14 @@ export class DiaEventoService {
         fechaInicio: this.toDateOnly(congreso.fecha_inicio),
         fechaFin: this.toDateOnly(congreso.fecha_fin),
         dias: await this.generar(congreso.id),
+        tarifas: await this.pagos.tarifas(congreso.id),
       });
     }
     return { congresos: opciones, tarifas: REGISTRO_TARIFAS };
+  }
+
+  async tarifa(congresoId: string, tipo: 'EXTERNO' | 'NSU'): Promise<number> {
+    return (await this.pagos.tarifas(congresoId))[tipo];
   }
 
   async validarSeleccion(congresoId: string, ids: string[]) {

@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 
 import { CreateForoEmpresarialDto } from './dto/create-foro-empresarial.dto';
@@ -28,8 +29,8 @@ export class ForoEmpresarialController {
 
   @Publico()
   @Get()
-  findAll(): Promise<ForoEmpresarialResponseDto[]> {
-    return this.service.findAll();
+  findAll(@Query('congresoId', new ParseUUIDPipe({ optional: true })) congresoId?: string): Promise<ForoEmpresarialResponseDto[]> {
+    return this.service.findAll(congresoId);
   }
 
   @Publico()

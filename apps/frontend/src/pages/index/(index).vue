@@ -5,8 +5,8 @@
         <div class="welcome-kicker">Centro de control</div>
         <h1>Panel de administración</h1>
         <p>
-          Consulta el estado general de participantes, validaciones y
-          actividades del congreso.
+          Consulta participantes, validaciones y actividades de
+          {{ selectedCongress?.nombre || "este congreso" }}.
         </p>
         <div class="row q-gutter-sm q-mt-md">
           <q-btn
@@ -29,6 +29,10 @@
       </div>
     </section>
 
+    <q-banner v-if="!selectedCongressId" rounded class="dashboard-notice q-mb-md">
+      Selecciona un congreso en la barra superior para ver su resumen.
+    </q-banner>
+
     <q-banner
       v-if="errorMessage"
       rounded
@@ -38,6 +42,12 @@
       <template #action
         ><q-btn flat label="Reintentar" @click="loadDashboard"
       /></template>
+    </q-banner>
+
+    <q-banner v-if="unassignedParticipants > 0" rounded class="dashboard-notice q-mb-md">
+      {{ unassignedParticipants }} participante{{ unassignedParticipants === 1 ? "" : "s" }}
+      sin congreso asignado no se incluyen en estos totales. Puedes asignar los
+      registros EMS y UTVM desde Participantes.
     </q-banner>
 
     <section class="metric-grid q-mb-lg">
@@ -111,7 +121,7 @@
               <div class="donut" :style="donutStyle"
                 ><div
                   ><strong>{{ validationTotal }}</strong
-                  ><span>registros</span></div
+                  ><span>solicitudes</span></div
                 ></div
               >
               <div class="legend">
@@ -212,16 +222,46 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useParticipantesAdmin } from "../../composables/useParticipantesAdmin";
 import { useConferenciasQuery } from "../../composables/useConferenciasQuery";
 import { useTalleresQuery } from "../../composables/useTalleresQuery";
+import { useAdminCongreso } from "../../composables/useAdminCongreso";
 
 const participantQuery = useParticipantesAdmin();
 const conferenceQuery = useConferenciasQuery();
 const workshopQuery = useTalleresQuery();
-
+const { selectedCongressId, selectedCongress } = useAdminCongreso();
 const { ems, utvm, nsu, externos } = participantQuery;
+const visibleEms = computed(() => ems.value.filter(item =>
+  item.congresoId === selectedCongressId.value && selectedCongressId.value !== null
+));
+const visibleUtvm = computed(() => utvm.value.filter(item =>
+  item.congresoId === selectedCongressId.value && selectedCongressId.value !== null
+));
+const visibleNsu = computed(() => nsu.value.filter(item =>
+  selectedCongressId.value !== null && item.participantes?.some(participante =>
+    participante.congresoId === selectedCongressId.value
+  )
+));
+const visibleExternos = computed(() => externos.value.filter(item =>
+  item.congresoId === selectedCongressId.value && selectedCongressId.value !== null
+));
+const visibleConferences = computed(() => conferenceQuery.data.value.filter(item =>
+  item.congreso_id === selectedCongressId.value
+));
+const visibleWorkshops = computed(() => workshopQuery.data.value.filter(item =>
+  item.congreso_id === selectedCongressId.value
+));
+
+const unassignedParticipants = computed(() =>
+  ems.value.filter(item => !item.congresoId).length +
+  utvm.value.filter(item => !item.congresoId).length +
+  nsu.value.reduce((sum, record) => sum + (record.participantes?.filter(item =>
+    !item.congresoId
+  ).length ?? 0), 0) +
+  externos.value.filter(item => !item.congresoId).length
+);
 const isLoading = computed(
   () =>
     participantQuery.isRefreshing.value ||
@@ -236,25 +276,27 @@ const errorMessage = computed(
 );
 
 const nsuPeople = computed(() =>
-  nsu.value.reduce(
+  visibleNsu.value.reduce(
     (sum, record) =>
-      sum + (record.participantes?.length ?? record.total_participantes ?? 0),
+      sum + (record.participantes?.filter(participante =>
+        participante.congresoId === selectedCongressId.value
+      ).length ?? 0),
     0
   )
 );
 const totalParticipants = computed(
   () =>
-    ems.value.length +
-    utvm.value.length +
+    visibleEms.value.length +
+    visibleUtvm.value.length +
     nsuPeople.value +
-    externos.value.length
+    visibleExternos.value.length
 );
 const maxParticipants = computed(() =>
   Math.max(
-    ems.value.length,
-    utvm.value.length,
+    visibleEms.value.length,
+    visibleUtvm.value.length,
     nsuPeople.value,
-    externos.value.length,
+    visibleExternos.value.length,
     1
   )
 );
@@ -263,12 +305,12 @@ const participantBreakdown = computed(() =>
   [
     {
       label: "EMS",
-      value: ems.value.length,
+      value: visibleEms.value.length,
       color: "linear-gradient(90deg, #ff83b7, #ffb8d5)"
     },
     {
       label: "UTVM",
-      value: utvm.value.length,
+      value: visibleUtvm.value.length,
       color: "linear-gradient(90deg, #42d6a4, #9ae8cb)"
     },
     {
@@ -278,7 +320,7 @@ const participantBreakdown = computed(() =>
     },
     {
       label: "Externos",
-      value: externos.value.length,
+      value: visibleExternos.value.length,
       color: "linear-gradient(90deg, #55baf7, #a9dcff)"
     }
   ].map(item => ({
@@ -290,8 +332,21 @@ const participantBreakdown = computed(() =>
 );
 
 const paymentStatuses = computed(() => [
-  ...nsu.value.map(item => item.estado_pago),
-  ...externos.value.map(item => item.status)
+  ...visibleNsu.value.flatMap(item =>
+    (item.participantes ?? [])
+      .filter(participante => participante.congresoId === selectedCongressId.value)
+      .map(participante => {
+        const estado = participante.estado_pago ?? "PENDIENTE";
+        return estado === "PENDIENTE" && !participante.correo_verificado
+          ? "pendiente_verificacion"
+          : estado;
+      })
+  ),
+  ...visibleExternos.value.map(item =>
+    item.status === "pendiente" && !item.correoVerificado
+      ? "pendiente_verificacion"
+      : item.status
+  )
 ]);
 const countStatus = (...values: string[]) =>
   paymentStatuses.value.filter(status => values.includes(status)).length;
@@ -303,8 +358,13 @@ const validationBreakdown = computed(() => [
   },
   {
     label: "Pendientes",
-    value: countStatus("PENDIENTE", "pendiente", "pendiente_verificacion"),
+    value: countStatus("PENDIENTE", "pendiente"),
     color: "#ffc76b"
+  },
+  {
+    label: "Correo sin verificar",
+    value: countStatus("pendiente_verificacion"),
+    color: "#a98bff"
   },
   {
     label: "Rechazados",
@@ -319,8 +379,9 @@ const donutStyle = computed(() => {
   const total = validationTotal.value || 1;
   const valid = (validationBreakdown.value[0]!.value / total) * 100;
   const pending = valid + (validationBreakdown.value[1]!.value / total) * 100;
+  const verifying = pending + (validationBreakdown.value[2]!.value / total) * 100;
   return {
-    background: `conic-gradient(#58d6aa 0 ${valid}%, #ffc76b ${valid}% ${pending}%, #ff7fa8 ${pending}% 100%)`
+    background: `conic-gradient(#58d6aa 0 ${valid}%, #ffc76b ${valid}% ${pending}%, #a98bff ${pending}% ${verifying}%, #ff7fa8 ${verifying}% 100%)`
   };
 });
 
@@ -341,14 +402,14 @@ const metrics = computed(() => [
   },
   {
     label: "Conferencias",
-    value: conferenceQuery.data.value.length,
+    value: visibleConferences.value.length,
     note: "actividades registradas",
     icon: "record_voice_over",
     tone: "purple"
   },
   {
     label: "Talleres",
-    value: workshopQuery.data.value.length,
+    value: visibleWorkshops.value.length,
     note: "actividades registradas",
     icon: "palette",
     tone: "mint"
@@ -382,10 +443,10 @@ const formatActivity = (
 const upcomingActivities = computed(() => {
   const today = new Date().toISOString().slice(0, 10);
   return [
-    ...conferenceQuery.data.value.map(item =>
+    ...visibleConferences.value.map(item =>
       formatActivity(item, "Conferencia")
     ),
-    ...workshopQuery.data.value.map(item => formatActivity(item, "Taller"))
+    ...visibleWorkshops.value.map(item => formatActivity(item, "Taller"))
   ]
     .filter(item => item.rawDate >= today)
     .sort((a, b) => a.rawDate.localeCompare(b.rawDate))
@@ -426,17 +487,34 @@ const quickActions = [
 const loadDashboard = async () => {
   await Promise.all([
     participantQuery.load(),
-    conferenceQuery.load(),
-    workshopQuery.load()
+    ...(selectedCongressId.value ? [
+      conferenceQuery.load(selectedCongressId.value),
+      workshopQuery.load(selectedCongressId.value)
+    ] : [])
   ]);
 };
 
 onMounted(() => void loadDashboard());
+watch(selectedCongressId, id => {
+  if (!id) return;
+  void conferenceQuery.load(id);
+  void workshopQuery.load(id);
+});
 </script>
 
 <style scoped>
 .dashboard-home {
   color: var(--text-main);
+}
+.dashboard-notice {
+  color: #ffecb6;
+  background: #3c3424;
+  border: 1px solid #7d6334;
+}
+:global(body.theme-light) .dashboard-notice {
+  color: #42331b;
+  background: #fff9e8;
+  border-color: #e8d9ad;
 }
 .welcome-card {
   position: relative;

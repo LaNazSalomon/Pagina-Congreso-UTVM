@@ -8,6 +8,7 @@ import {
   Param,
   Delete,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { ConferenciasService } from './conferencia.service';
 import { CreateConferenciaDto } from './dto/create-conferencia.dto';
@@ -24,8 +25,8 @@ export class ConferenciasController {
 
   @Publico()
   @Get()
-  findAllConferencias() {
-    return this.conferenciasService.findAllConferencias();
+  findAllConferencias(@Query('congresoId', new ParseUUIDPipe({ optional: true })) congresoId?: string) {
+    return this.conferenciasService.findAllConferencias(congresoId);
   }
 
   @Publico()

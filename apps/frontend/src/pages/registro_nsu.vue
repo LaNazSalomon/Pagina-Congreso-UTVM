@@ -1,22 +1,17 @@
 <template>
   <div class="registro-page">
     <section class="registro-header">
-      <div class="row items-start justify-between q-col-gutter-md">
+      <div class="row items-center q-gutter-sm">
+        <q-btn
+          flat
+          round
+          icon="arrow_back"
+          aria-label="Volver"
+          @click="goToParticipantes"
+        />
         <div class="col">
-          <h1>Registro NSU (Nivel Superior)</h1>
-          <p>
-            El tutor o docente podrá registrar desde un participante y hasta n
-            participantes o subir archivo CSV.
-          </p>
-        </div>
-
-        <div class="col-auto">
-          <q-btn
-            flat
-            label="Volver"
-            text-color="white"
-            @click="goToParticipantes"
-          />
+          <h1>Nuevo registro NSU</h1>
+          <p> Agrega participantes o importa un archivo CSV. </p>
         </div>
       </div>
     </section>
@@ -359,13 +354,13 @@ watch(congresoId, () => {
 });
 
 const montoParticipanteActual = computed(() => {
-  return form.value.dias.length * costoPorDia.value;
+  return (form.value.dias.length * Math.round(costoPorDia.value * 100)) / 100;
 });
 
 const totalGeneral = computed(() => {
-  return participantes.value.reduce((total, participante) => {
-    return total + participante.montoNumero;
-  }, 0);
+  return participantes.value.reduce((centavos, participante) => {
+    return centavos + Math.round(participante.montoNumero * 100);
+  }, 0) / 100;
 });
 
 const columns = [
@@ -618,7 +613,7 @@ function leerCsv(file: File | null) {
             new Set(seleccion.map(dia => dia.value)).size !== seleccion.length
           )
             throw new Error(`Fila ${index + 1}: hay fechas repetidas.`);
-          const monto = seleccion.length * costoPorDia.value;
+          const monto = (seleccion.length * Math.round(costoPorDia.value * 100)) / 100;
 
           return {
             id: participantes.value.length + index + 1,

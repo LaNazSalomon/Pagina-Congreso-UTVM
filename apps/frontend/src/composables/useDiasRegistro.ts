@@ -12,6 +12,7 @@ export interface CongresoRegistro {
   fechaInicio: string;
   fechaFin: string;
   dias: DiaRegistro[];
+  tarifas?: { EXTERNO: number; NSU: number };
 }
 
 export function formatoFechaRegistro(fecha: string) {
@@ -36,7 +37,8 @@ export function useDiasRegistro(tipo: "EXTERNO" | "NSU") {
   const congresoId = ref("");
   const cargandoDias = ref(false);
   const errorDias = ref("");
-  const costoPorDia = ref(0);
+  const tarifasGenerales = ref({ EXTERNO: 250, NSU: 100 });
+  const costoPorDia = computed(() => congresoSeleccionado.value?.tarifas?.[tipo] ?? tarifasGenerales.value[tipo]);
   const congresoSeleccionado = computed(() =>
     congresos.value.find(item => item.id === congresoId.value)
   );
@@ -62,7 +64,7 @@ export function useDiasRegistro(tipo: "EXTERNO" | "NSU") {
         tarifas: { EXTERNO: number; NSU: number };
       }>("congresos/opciones-registro");
       congresos.value = data.congresos;
-      costoPorDia.value = data.tarifas[tipo];
+      tarifasGenerales.value = data.tarifas;
       if (!congresos.value.some(item => item.id === congresoId.value))
         congresoId.value = congresos.value[0]?.id ?? "";
       if (!congresos.value.length)

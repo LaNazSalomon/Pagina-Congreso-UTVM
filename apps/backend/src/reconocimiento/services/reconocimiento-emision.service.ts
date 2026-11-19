@@ -171,11 +171,19 @@ export class ReconocimientoEmisionService {
         'clave_emision' | 'congreso' | 'tipo' | 'nombre_destinatario'
       >,
   ): Promise<void> {
+    // Las claves anteriores no incluían el congreso. Si una actividad se mueve,
+    // conservar su emisión histórica y preparar otra para el congreso actual.
+    const legacy = await this.reconocimientos.findOne({
+      where: { clave_emision: value.clave_emision },
+      relations: { congreso: true },
+    });
+    if (legacy?.congreso.id === value.congreso.id) return;
     await this.reconocimientos
       .createQueryBuilder()
       .insert()
       .values({
         ...value,
+        clave_emision: `congreso:${value.congreso.id}:${value.clave_emision}`,
         estado: ReconocimientoEstado.PENDIENTE,
         intentos: 0,
       })

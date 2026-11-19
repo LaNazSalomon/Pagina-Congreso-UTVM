@@ -1,31 +1,17 @@
 <template>
   <q-page class="login-page">
-    <!-- Elementos decorativos -->
-    <div class="background-decoration background-decoration-left"></div>
-    <div class="background-decoration background-decoration-right"></div>
-
-    <div class="dots dots-top"></div>
-    <div class="dots dots-bottom"></div>
-
-    <!-- Contenido principal -->
     <main class="login-container">
       <section class="login-card">
-        <!-- Icono -->
         <div class="login-icon-container">
-          <q-icon name="person_outline" class="login-icon" />
-
-          <span class="icon-line icon-line-one"></span>
-          <span class="icon-line icon-line-two"></span>
-          <span class="icon-line icon-line-three"></span>
+          <q-icon name="badge" class="login-icon" />
         </div>
 
-        <!-- Encabezado -->
         <div class="login-header">
-          <h1>¡Bienvenido!</h1>
-          <p>Inicia sesión y disfruta del congreso.</p>
+          <span class="login-kicker">Congreso UTVM</span>
+          <h1>Acceso de participantes</h1>
+          <p>Ingresa tu correo de registro y te enviaremos un código para acceder.</p>
         </div>
 
-        <!-- Formulario -->
         <q-form
           ref="loginForm"
           class="login-form"
@@ -41,6 +27,7 @@
               v-model.trim="email"
               type="email"
               outlined
+              :dark="!isLight"
               no-error-icon
               hide-bottom-space
               autocomplete="email"
@@ -88,7 +75,7 @@
             <q-icon
               name="mark_email_read"
               size="55px"
-              color="primary"
+              color="positive"
             />
           </div>
 
@@ -96,7 +83,7 @@
             Verifica tu identidad
           </div>
 
-          <div class="text-body1 q-mt-sm text-grey-7">
+          <div class="text-body1 q-mt-sm codigo-muted">
             Enviamos un código de 6 dígitos a:
           </div>
 
@@ -111,6 +98,7 @@
               ref="codigoInput"
               v-model="codigo"
               outlined
+              :dark="!isLight"
               autofocus
               maxlength="6"
               inputmode="numeric"
@@ -122,7 +110,7 @@
               @update:model-value="filtrarCodigo"
             />
 
-            <div class="text-caption text-grey-7 text-center q-mt-sm">
+            <div class="text-caption codigo-muted text-center q-mt-sm">
               El código tiene una vigencia de 5 minutos.
             </div>
 
@@ -130,7 +118,7 @@
               type="submit"
               unelevated
               no-caps
-              color="primary"
+              color="positive"
               label="Verificar código"
               class="full-width q-mt-lg"
               :loading="verificandoCodigo"
@@ -143,9 +131,8 @@
             <q-btn
               flat
               no-caps
-              color="grey-8"
               label="Cancelar"
-              class="full-width q-mt-sm"
+              class="codigo-cancelar full-width q-mt-sm"
               :disable="verificandoCodigo"
               @click="cerrarModalCodigo"
             />
@@ -161,6 +148,7 @@ import { nextTick, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
 import { api } from '../services/api';
+import { useThemeMode } from '../composables/useThemeMode';
 
 interface ParticipanteLogin {
   id: string;
@@ -188,6 +176,7 @@ interface RespuestaLogin {
 
 const $q = useQuasar();
 const router = useRouter();
+const { isLight } = useThemeMode();
 
 const email = ref('');
 const codigo = ref('');

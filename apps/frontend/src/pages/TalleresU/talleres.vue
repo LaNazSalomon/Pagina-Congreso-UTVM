@@ -1,6 +1,6 @@
 <template>
   <q-page class="talleres-page">
-    <q-inner-loading :showing="isRefreshing">
+    <q-inner-loading :showing="cargandoPagina">
       <q-spinner size="50px" color="positive" />
     </q-inner-loading>
 
@@ -32,20 +32,20 @@
           icon="refresh"
           label="Refrescar"
           class="talleres-refresh"
-          :loading="isRefreshing"
-          :disable="isRefreshing"
+          :loading="cargandoPagina"
+          :disable="cargandoPagina"
           @click="cargarTalleres"
         />
       </div>
 
-      <div v-if="!isRefreshing && error" class="sin-talleres error">
+      <div v-if="!cargandoPagina && (error || errorCongreso)" class="sin-talleres error">
         <q-icon name="error_outline" size="50px" />
         <strong>No se pudieron cargar los talleres</strong>
-        <p>{{ error }}</p>
+        <p>{{ errorCongreso || error }}</p>
       </div>
 
       <div
-        v-else-if="!isRefreshing && talleres.length === 0"
+        v-else-if="!cargandoPagina && talleres.length === 0"
         class="sin-talleres"
       >
         <q-icon name="event_busy" size="50px" />
@@ -353,6 +353,7 @@ import { AxiosError } from "axios";
 
 import { useTalleresQuery } from "../../composables/useTalleresQuery";
 import { api } from "../../services/api";
+import { obtenerCongresoPublicoActual } from "../../services/congresoPublicoService";
 import { cargarSesionParticipante } from "../../services/participanteSessionService";
 
 interface TallerBackend {
@@ -438,6 +439,9 @@ type TipoParticipante = "EXTERNO" | "NSU";
 const $q = useQuasar();
 
 const { data, load, isRefreshing, error } = useTalleresQuery();
+const cargandoCongreso = ref(false);
+const errorCongreso = ref("");
+const cargandoPagina = computed(() => cargandoCongreso.value || isRefreshing.value);
 
 const tallerSeleccionado = ref<TallerVista | null>(null);
 
@@ -799,16 +803,26 @@ async function cargarPonentesConFoto(): Promise<void> {
 }
 
 const cargarTalleres = async (): Promise<void> => {
-  if (isRefreshing.value) {
+  if (cargandoPagina.value) {
     return;
   }
 
+  cargandoCongreso.value = true;
+  errorCongreso.value = "";
   try {
-    await Promise.all([load(), cargarPonentesConFoto()]);
+    const congresoId = await obtenerCongresoPublicoActual();
+    if (!congresoId) {
+      errorCongreso.value = "Aún no hay un congreso publicado.";
+      return;
+    }
+    await Promise.all([load(congresoId), cargarPonentesConFoto()]);
 
     console.log("Talleres cargados:", data.value);
   } catch (err) {
+    errorCongreso.value = "No pudimos consultar el congreso actual.";
     console.error("Error al cargar los talleres:", err);
+  } finally {
+    cargandoCongreso.value = false;
   }
 };
 

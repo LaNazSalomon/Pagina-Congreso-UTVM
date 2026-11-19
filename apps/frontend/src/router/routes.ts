@@ -47,6 +47,14 @@ const routes: RouteRecordRaw[] = [
         component: () => import("@/pages/public_home.vue")
       },
       {
+        path: "noticias",
+        component: () => import("@/pages/noticias/NoticiasPage.vue")
+      },
+      {
+        path: "noticias/:slug",
+        component: () => import("@/pages/noticias/NoticiaDetallePage.vue")
+      },
+      {
         path: "agenda",
         component: () => import("@/pages/agenda/AgendaPage.vue")
       },
@@ -125,6 +133,11 @@ const routes: RouteRecordRaw[] = [
         path: "congresos",
         alias: "/congresos",
         component: () => import("@/pages/dashboards/CongresosPage.vue")
+      },
+      {
+        path: "pagos",
+        alias: "/pagos",
+        component: () => import("@/pages/dashboards/PagosPage.vue")
       },
       {
         path: "congresos/nuevo",

@@ -150,7 +150,7 @@
               :label="dia.label"
               color="primary"
               :disable="cargandoDias || cargando"
-              dark
+              :dark="!isLight"
             />
           </div>
 
@@ -167,6 +167,25 @@
           <div class="box-help"
             >${{ costoPorDia.toFixed(2) }} MXN por día seleccionado</div
           >
+        </div>
+
+        <div class="externo-dark-box" style="grid-column: 1 / -1">
+          <div class="box-label">Cómo pagar</div>
+          <template v-if="pago?.banco || pago?.beneficiario || pago?.clabe || pago?.numero_tarjeta">
+            <div v-if="pago.banco" class="q-mt-sm">Banco: <strong>{{ pago.banco }}</strong></div>
+            <div v-if="pago.beneficiario" class="q-mt-xs">Beneficiario: <strong>{{ pago.beneficiario }}</strong></div>
+            <div v-if="pago.clabe" class="q-mt-xs row items-center q-gutter-sm">
+              <span>CLABE: <strong>{{ pago.clabe }}</strong></span>
+              <q-btn type="button" flat dense icon="content_copy" label="Copiar" @click="copiarDatoPago(pago.clabe)" />
+            </div>
+            <div v-if="pago.numero_tarjeta" class="q-mt-xs row items-center q-gutter-sm">
+              <span>Tarjeta de débito: <strong>{{ pago.numero_tarjeta }}</strong></span>
+              <q-btn type="button" flat dense icon="content_copy" label="Copiar" @click="copiarDatoPago(pago.numero_tarjeta)" />
+            </div>
+            <div v-if="pago.concepto" class="q-mt-xs">Concepto: <strong>{{ pago.concepto }}</strong></div>
+            <div class="box-help q-mt-sm">Paga exactamente ${{ total.toFixed(2) }} MXN por los días seleccionados y conserva tu comprobante.</div>
+          </template>
+          <div v-else class="box-help q-mt-sm">Los datos de pago de este congreso aún no están publicados.</div>
         </div>
 
         <div class="externo-upload-box">
@@ -493,10 +512,12 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import { apiBaseUrl } from "@/services/api";
+import { api, apiBaseUrl } from "@/services/api";
 import { useDiasRegistro } from "@/composables/useDiasRegistro";
+import { useThemeMode } from "@/composables/useThemeMode";
 
 const router = useRouter();
+const { isLight } = useThemeMode();
 
 const API_EXTERNOS = `${apiBaseUrl}/externos`;
 
@@ -520,6 +541,7 @@ const TIPOS_VALIDOS = [
 ];
 
 const formRef = ref(null);
+const pago = ref(null);
 const fileInput = ref(null);
 
 const mostrarResumen = ref(false);
@@ -547,16 +569,31 @@ const isDragging = ref(false);
 const archivoError = ref("");
 const diasError = ref("");
 
-const total = computed(() => form.value.dias.length * costoPorDia.value);
+const total = computed(() => (form.value.dias.length * Math.round(costoPorDia.value * 100)) / 100);
 
 const diasSeleccionados = computed(() =>
   dias.value.filter(d => form.value.dias.includes(d.value))
 );
 
-watch(congresoId, () => {
+watch(congresoId, async id => {
   form.value.dias = [];
   mostrarResumen.value = false;
+  pago.value = null;
+  if (!id) return;
+  try {
+    const { data } = await api.get(`pagos/${id}/publico`);
+    if (congresoId.value === id) {
+      pago.value = data;
+      if (congresoSeleccionado.value) congresoSeleccionado.value.tarifas = data.tarifas;
+    }
+  } catch {
+    if (congresoId.value === id) pago.value = null;
+  }
 });
+
+async function copiarDatoPago(valor) {
+  await navigator.clipboard.writeText(valor);
+}
 
 const nombreCompleto = computed(() =>
   [form.value.nombre, form.value.apellidoPaterno, form.value.apellidoMaterno]
@@ -743,6 +780,9 @@ async function confirmarRegistro() {
     }
 
     if (!response.ok) {
+      if (response.status === 400 && String(data?.message || "").includes("precio cambió")) {
+        await cargarDias();
+      }
       throw new Error(data?.message || "No se pudo registrar el participante.");
     }
 

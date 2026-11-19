@@ -12,9 +12,10 @@ de México podía desplazar el inicio al día anterior. `CONGRESS_TIMEZONE`
 `GET /api/congresos/opciones-registro` devuelve:
 
 - `congresos`: ediciones que no han terminado, ordenadas por fecha inicial.
-- Para cada congreso: `id`, `nombre`, `fechaInicio`, `fechaFin` y `dias`.
+- Para cada congreso: `id`, `nombre`, `fechaInicio`, `fechaFin`, `dias` y `tarifas`.
 - Para cada día: `id`, `fechaEvento` en `AAAA-MM-DD` y `etiqueta`.
-- `tarifas`: precio por día para `EXTERNO` y `NSU`.
+- `tarifas`: precios predeterminados anteriores para compatibilidad. Cada
+  congreso devuelve sus tarifas vigentes en `congresos[].tarifas`.
 
 La generación de días es idempotente. El catálogo excluye fechas que hayan
 quedado fuera del periodo por una edición posterior del congreso. Conserva
@@ -33,12 +34,14 @@ con una clave foránea a `congreso`, `diaEventoIds` como arreglo UUID y `dias`
 con las fechas ISO para consulta y compatibilidad. NSU usa texto para permitir
 selecciones de más de tres días sin el antiguo límite de 100 caracteres.
 
-Las tarifas están centralizadas en
-`apps/backend/src/dia-evento/registro-tarifas.constant.ts`: externos $250 y NSU
-$100 por día. NSU mostraba $250 en la interfaz, mientras el backend exigía $100;
-se conservó la regla del backend y ambos formularios consultan ahora el valor
-del servidor. La tarifa NSU sigue pendiente de confirmación del usuario.
-La conversión de datos antiguos no recalcula sus importes.
+Las tarifas se configuran por congreso desde el módulo **Pagos** del administrador.
+Si una edición aún no tiene configuración, conserva los valores anteriores:
+externos $250 y NSU $100 por día. El servidor calcula y valida el total con
+la tarifa vigente del congreso. Una actualización aplica a inscripciones nuevas;
+los importes ya registrados se conservan. Al editar los días de un externo
+existente dentro del mismo congreso se mantiene su tarifa original por día.
+Si el precio cambia mientras alguien tiene el formulario abierto, el registro
+se rechaza con un mensaje explícito y el formulario recarga la tarifa.
 
 El administrador también ve fechas legibles y puede editar los días del externo
 dentro de su congreso original. Un cambio de selección recalcula el importe;

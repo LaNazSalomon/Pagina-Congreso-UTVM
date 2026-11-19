@@ -1,16 +1,17 @@
 <template>
-  <q-page class="flex flex-center q-pa-md personal-login">
-    <q-card flat bordered class="login-card q-pa-md">
-      <q-card-section>
-        <q-icon name="badge" size="42px" color="primary" />
-        <h1 class="text-h5 q-mb-sm">{{
+  <q-page class="personal-page personal-login">
+    <q-card flat bordered class="personal-card personal-card--login">
+      <q-card-section class="personal-card__intro">
+        <span class="personal-card__icon"><q-icon name="badge" size="34px" /></span>
+        <span class="personal-card__eyebrow">PERSONAL DEL CONGRESO</span>
+        <h1>{{
           registroInicial
             ? "Crear primera cuenta administradora"
             : cambioInicial
               ? "Elige tu contraseña"
               : "Acceso del personal"
         }}</h1>
-        <p class="text-grey-8">{{
+        <p class="personal-card__description">{{
           registroInicial
             ? "Registra tu nombre y correo. Recibirás un enlace para elegir tu contraseña y activar tu cuenta administradora."
             : cambioInicial
@@ -18,7 +19,7 @@
               : "Administradores y validadores: entra con tu correo y contraseña."
         }}</p>
       </q-card-section>
-      <q-card-section>
+      <q-card-section class="personal-card__content">
         <q-banner
           v-if="error"
           rounded
@@ -54,19 +55,20 @@
             {{ cuentaAnterior.correo }}.</p
           >
           <q-btn
-            color="primary"
+            class="personal-primary-btn full-width"
             no-caps
-            class="full-width"
             label="Enviar enlace para elegir mi contraseña"
             :loading="ocupado"
             @click="configurarCuentaAnterior"
           />
         </template>
-        <q-form v-else @submit="enviar" class="q-gutter-md">
+        <q-form v-else @submit="enviar" class="personal-form">
           <q-input
             v-if="registroInicial"
             v-model.trim="nombre"
             outlined
+            :dark="!isLight"
+            class="personal-field"
             label="Nombre completo"
             autocomplete="name"
             maxlength="150"
@@ -78,6 +80,8 @@
           <q-input
             v-model.trim="correo"
             outlined
+            :dark="!isLight"
+            class="personal-field"
             label="Correo del personal"
             type="email"
             autocomplete="username"
@@ -89,6 +93,8 @@
             v-if="!registroInicial && !cambioInicial"
             v-model="contrasena"
             outlined
+            :dark="!isLight"
+            class="personal-field"
             label="Contraseña"
             :type="mostrar ? 'text' : 'password'"
             autocomplete="current-password"
@@ -112,6 +118,8 @@
             <q-input
               v-model="nueva"
               outlined
+              :dark="!isLight"
+              class="personal-field"
               label="Nueva contraseña"
               :type="mostrar ? 'text' : 'password'"
               autocomplete="new-password"
@@ -143,6 +151,8 @@
             <q-input
               v-model="confirmacion"
               outlined
+              :dark="!isLight"
+              class="personal-field"
               label="Confirmar contraseña"
               :type="mostrar ? 'text' : 'password'"
               autocomplete="new-password"
@@ -152,8 +162,7 @@
             />
           </template>
           <q-btn
-            color="primary"
-            class="full-width"
+            class="personal-primary-btn full-width"
             type="submit"
             :label="
               registroInicial
@@ -171,18 +180,18 @@
             flat
             no-caps
             label="Volver al inicio de sesión"
-            class="full-width"
+            class="personal-text-btn full-width"
             :disable="ocupado"
             @click="volver"
           />
-          <p v-if="!registroInicial && !cambioInicial" class="text-grey-8"
+          <p v-if="!registroInicial && !cambioInicial" class="personal-card__help"
             >¿Olvidaste tu contraseña? Contacta a un administrador para que te
             envíe un enlace para restablecerla.</p
           >
         </q-form>
       </q-card-section>
-      <q-card-actions align="center"
-        ><q-btn flat no-caps to="/login" label="Acceso de participantes"
+      <q-card-actions align="center" class="personal-card__footer"
+        ><q-btn flat no-caps to="/login" label="Acceso de participantes" class="personal-text-btn"
       /></q-card-actions>
     </q-card>
   </q-page>
@@ -190,6 +199,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useThemeMode } from "../composables/useThemeMode";
 import { api } from "../services/api";
 import {
   cargarSesionPersonal,
@@ -201,6 +211,7 @@ import {
 } from "../services/personalService";
 const route = useRoute();
 const router = useRouter();
+const { isLight } = useThemeMode();
 const nombre = ref("");
 const correo = ref(
   typeof route.query.correo === "string" ? route.query.correo : ""
@@ -320,14 +331,3 @@ async function configurarCuentaAnterior() {
   }
 }
 </script>
-<style scoped>
-.personal-login {
-  background: #f3f7f5;
-}
-.login-card {
-  color: #1d2b28;
-  color-scheme: light;
-  width: min(100%, 500px);
-  border-radius: 18px;
-}
-</style>

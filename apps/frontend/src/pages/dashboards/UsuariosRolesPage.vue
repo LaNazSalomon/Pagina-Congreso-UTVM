@@ -1,134 +1,182 @@
 <template>
-  <q-page padding class="hero-page">
-    <div class="row items-center justify-between q-gutter-md q-mb-lg">
-      <div
-        ><h1 class="text-h5 q-my-sm">Usuarios y roles</h1
-        ><p class="text-grey-7 q-mb-none"
-          >Administra las cuentas del personal y sus permisos.</p
-        ></div
-      >
+  <q-page class="hero-page q-pa-md">
+    <div class="row justify-between items-center q-mb-lg">
+      <div>
+        <div class="text-h4 text-weight-bold">Usuarios y roles</div>
+        <div class="text-subtitle2 text-grey-7">
+          Administra las cuentas del personal y sus permisos.
+        </div>
+      </div>
       <q-btn
+        unelevated
         color="primary"
         icon="person_add"
         label="Agregar personal"
-        no-caps
+        :disable="ocupado"
         @click="abrir()"
       />
     </div>
-    <q-banner
+    <StatePanel
       v-if="error"
-      class="bg-red-1 text-negative q-mb-md"
-      rounded
-      role="alert"
-      >{{ error }}</q-banner
-    >
-    <q-table
-      class="dashboard-table"
-      :rows="usuarios"
-      :columns="columnas"
-      row-key="id"
-      :loading="cargando"
-      :filter="filtro"
-      :pagination="{ rowsPerPage: 15 }"
-      no-data-label="Todavía no hay cuentas"
-      no-results-label="No hay coincidencias"
-    >
-      <template #top
-        ><q-input
-          v-model="filtro"
-          outlined
-          dense
-          clearable
-          label="Buscar personal"
-          class="col-12 col-sm-6"
-          ><template #prepend><q-icon name="search" /></template></q-input
-        ><q-space /><q-btn
+      class="q-mb-md"
+      title="No se pudo cargar el personal"
+      :description="error"
+      icon="warning"
+      tone="warning"
+    />
+    <q-card class="dashboard-card q-pa-md">
+      <q-card-section>
+        <q-table
+          class="dashboard-table"
           flat
-          round
-          icon="refresh"
-          aria-label="Actualizar lista"
-          @click="cargar"
-      /></template>
-      <template #body-cell-rol="props"
-        ><q-td :props="props"
-          ><q-badge
-            :color="props.row.rol === 'ADMINISTRADOR' ? 'primary' : 'teal'"
-            >{{
-              props.row.rol === "ADMINISTRADOR" ? "Administrador" : "Validador"
-            }}</q-badge
-          ></q-td
-        ></template
-      >
-      <template #body-cell-estado="props"
-        ><q-td :props="props">{{
-          !props.row.activo
-            ? "Desactivada"
-            : props.row.correoVerificado
-              ? "Activa"
-              : "Pendiente de primer acceso"
-        }}</q-td></template
-      >
-      <template #body-cell-acciones="props"
-        ><q-td :props="props">
-          <q-btn
-            flat
-            round
-            dense
-            icon="edit"
-            aria-label="Editar cuenta"
-            :disable="ocupado"
-            @click="abrir(props.row)"
-            ><q-tooltip>Editar nombre y rol</q-tooltip></q-btn
-          >
-          <q-btn
-            flat
-            round
-            dense
-            icon="lock_reset"
-            aria-label="Restablecer contraseña"
-            :disable="ocupado || !props.row.activo"
-            @click="invitar(props.row)"
-            ><q-tooltip
-              >Enviar enlace para restablecer contraseña</q-tooltip
-            ></q-btn
-          >
-          <q-btn
-            flat
-            round
-            dense
-            :icon="props.row.activo ? 'person_off' : 'person'"
-            :color="props.row.activo ? 'negative' : 'positive'"
-            :aria-label="
-              props.row.activo ? 'Desactivar cuenta' : 'Activar cuenta'
-            "
-            :disable="ocupado"
-            @click="cambiarEstado(props.row)"
-            ><q-tooltip>{{
-              props.row.activo ? "Desactivar cuenta" : "Activar cuenta"
-            }}</q-tooltip></q-btn
-          >
-        </q-td></template
-      >
-    </q-table>
-    <q-dialog v-model="dialogo" persistent>
-      <q-card class="usuario-dialogo">
-        <q-card-section
-          ><h2 class="text-h6 q-my-none">{{
-            editando ? "Editar personal" : "Agregar personal"
-          }}</h2></q-card-section
+          bordered
+          :rows="usuarios"
+          :columns="columnas"
+          row-key="id"
+          :loading="cargando"
+          :filter="filtro"
+          :pagination="{ rowsPerPage: 15 }"
+          no-data-label="Todavía no hay cuentas"
+          no-results-label="No hay coincidencias"
         >
-        <q-form @submit="guardar">
-          <q-card-section class="q-gutter-md">
+          <template #top
+            ><q-input
+              v-model="filtro"
+              :dark="!isLight"
+              dense
+              clearable
+              label="Buscar personal"
+              class="col-12 col-sm-6"
+              ><template #prepend><q-icon name="search" /></template></q-input
+            ><q-space /><q-btn
+              flat
+              round
+              color="primary"
+              icon="refresh"
+              aria-label="Actualizar lista"
+              :loading="cargando"
+              @click="cargar"
+          /></template>
+          <template #body-cell-rol="props"
+            ><q-td :props="props"
+              ><q-badge
+                :color="props.row.rol === 'ADMINISTRADOR' ? 'primary' : 'teal'"
+                :text-color="
+                  props.row.rol === 'ADMINISTRADOR' ? 'black' : 'white'
+                "
+                >{{
+                  props.row.rol === "ADMINISTRADOR"
+                    ? "Administrador"
+                    : "Validador"
+                }}</q-badge
+              ></q-td
+            ></template
+          >
+          <template #body-cell-estado="props"
+            ><q-td :props="props">
+              <q-badge
+                :color="
+                  !props.row.activo
+                    ? 'negative'
+                    : props.row.correoVerificado
+                      ? 'positive'
+                      : 'warning'
+                "
+                :text-color="
+                  props.row.activo && props.row.correoVerificado
+                    ? 'black'
+                    : 'white'
+                "
+                >{{
+                  !props.row.activo
+                    ? "Desactivada"
+                    : props.row.correoVerificado
+                      ? "Activa"
+                      : "Pendiente de primer acceso"
+                }}</q-badge
+              >
+            </q-td></template
+          >
+          <template #body-cell-acciones="props"
+            ><q-td :props="props">
+              <q-btn
+                flat
+                round
+                dense
+                icon="edit"
+                aria-label="Editar cuenta"
+                :disable="ocupado"
+                @click="abrir(props.row)"
+                ><q-tooltip>Editar nombre y rol</q-tooltip></q-btn
+              >
+              <q-btn
+                flat
+                round
+                dense
+                icon="lock_reset"
+                aria-label="Restablecer contraseña"
+                :disable="ocupado || !props.row.activo"
+                @click="invitar(props.row)"
+                ><q-tooltip
+                  >Enviar enlace para restablecer contraseña</q-tooltip
+                ></q-btn
+              >
+              <q-btn
+                flat
+                round
+                dense
+                :icon="props.row.activo ? 'person_off' : 'person'"
+                :color="props.row.activo ? 'negative' : 'positive'"
+                :aria-label="
+                  props.row.activo ? 'Desactivar cuenta' : 'Activar cuenta'
+                "
+                :disable="ocupado"
+                @click="cambiarEstado(props.row)"
+                ><q-tooltip>{{
+                  props.row.activo ? "Desactivar cuenta" : "Activar cuenta"
+                }}</q-tooltip></q-btn
+              >
+            </q-td></template
+          >
+        </q-table>
+      </q-card-section>
+    </q-card>
+    <q-dialog v-model="dialogo" persistent>
+      <q-card class="admin-form-dialog">
+        <q-card-section class="admin-form-dialog__header">
+          <q-avatar class="admin-form-dialog__icon" icon="manage_accounts" />
+          <div>
+            <div class="text-h6 text-weight-bold">{{
+              editando ? "Editar personal" : "Agregar personal"
+            }}</div>
+            <div class="admin-form-dialog__subtitle">
+              {{
+                editando
+                  ? "Actualiza el nombre y el rol de esta cuenta."
+                  : "Registra a un administrador o validador."
+              }}
+            </div>
+          </div>
+        </q-card-section>
+        <q-separator />
+        <q-card-section class="admin-form-dialog__body">
+          <q-form
+            class="admin-form row q-col-gutter-md"
+            @submit.prevent="guardar"
+          >
             <q-banner
               v-if="errorFormulario"
-              class="bg-red-1 text-negative"
+              class="bg-red-1 text-negative col-12"
               rounded
               role="alert"
               >{{ errorFormulario }}</q-banner
             >
             <q-input
               v-model.trim="form.nombre"
-              outlined
+              class="col-12"
+              :dark="!isLight"
+              dense
+              autofocus
               label="Nombre completo"
               maxlength="150"
               :disable="ocupado"
@@ -136,7 +184,9 @@
             />
             <q-input
               v-model.trim="form.correo"
-              outlined
+              class="col-12"
+              :dark="!isLight"
+              dense
               type="email"
               label="Correo"
               :disable="ocupado || !!editando"
@@ -149,33 +199,40 @@
             />
             <q-select
               v-model="form.rol"
-              outlined
+              class="col-12"
+              :dark="!isLight"
+              dense
               label="Rol"
               :options="roles"
               emit-value
               map-options
               :disable="ocupado"
             />
-            <p class="text-grey-7">{{
+            <p class="admin-form-dialog__subtitle col-12 q-mb-none">{{
               editando
                 ? "Cambiar el rol cerrará las sesiones de esta cuenta."
                 : "La persona recibirá un enlace por correo para elegir su contraseña. Solo un administrador puede enviar estos enlaces."
             }}</p>
-          </q-card-section>
-          <q-card-actions align="right"
-            ><q-btn
-              flat
-              label="Cancelar"
-              no-caps
-              v-close-popup
-              :disable="ocupado" /><q-btn
-              color="primary"
-              type="submit"
-              label="Guardar"
-              no-caps
-              :loading="ocupado"
-          /></q-card-actions>
-        </q-form>
+            <div class="admin-form-dialog__actions col-12">
+              <q-btn
+                class="admin-form-dialog__cancel"
+                flat
+                label="Cancelar"
+                v-close-popup
+                :disable="ocupado"
+              />
+              <q-btn
+                class="admin-form-dialog__submit"
+                unelevated
+                color="primary"
+                type="submit"
+                label="Guardar"
+                :loading="ocupado"
+                :disable="ocupado"
+              />
+            </div>
+          </q-form>
+        </q-card-section>
       </q-card>
     </q-dialog>
   </q-page>
@@ -184,6 +241,8 @@
 import { onMounted, ref } from "vue";
 import { useQuasar, type QTableColumn } from "quasar";
 import { useRouter } from "vue-router";
+import StatePanel from "../../components/feedback/StatePanel.vue";
+import { useThemeMode } from "../../composables/useThemeMode";
 import { api } from "../../services/api";
 import {
   cargarSesionPersonal,
@@ -194,6 +253,7 @@ import {
 } from "../../services/personalService";
 const $q = useQuasar();
 const router = useRouter();
+const { isLight } = useThemeMode();
 const usuarios = ref<UsuarioPersonal[]>([]);
 const cargando = ref(false);
 const ocupado = ref(false);
@@ -332,8 +392,3 @@ function cambiarEstado(usuario: UsuarioPersonal) {
   });
 }
 </script>
-<style scoped>
-.usuario-dialogo {
-  width: min(94vw, 540px);
-}
-</style>

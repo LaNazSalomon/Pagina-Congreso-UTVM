@@ -1,77 +1,84 @@
 <template>
-  <div class="registro-externo-page q-pa-md">
-    <q-card class="registro-externo-card">
-      <q-card-section>
-        <div class="row items-start justify-between q-col-gutter-md">
-          <div>
-            <div class="titulo">Registro de Participantes UTVM</div>
-            <div class="subtitulo">Congreso UTVM</div>
-          </div>
+  <div class="hero-page q-pa-md participant-entry-page">
+    <div class="row items-center q-gutter-sm q-mb-lg">
+      <q-btn
+        flat
+        round
+        icon="arrow_back"
+        aria-label="Volver"
+        @click="goToParticipantes"
+      />
+      <div>
+        <div class="text-h4 text-weight-bold">Nuevo registro UTVM</div>
+        <div class="text-subtitle2 text-grey-7"
+          >Agrega participantes o importa un archivo CSV.</div
+        >
+      </div>
+    </div>
 
-          <div>
-            <q-btn
-              flat
-              label="Volver"
-              text-color="white"
-              @click="goToParticipantes"
-            />
-          </div>
-        </div>
-      </q-card-section>
+    <q-banner rounded class="q-mb-md">
+      Congreso: {{ selectedCongress?.nombre || "Selecciona un congreso en la barra superior" }}
+    </q-banner>
 
-      <q-separator />
-
+    <q-card class="dashboard-card participant-entry-card q-pa-md">
       <q-card-section>
         <div class="section-title">Datos del participante</div>
 
         <div class="row q-col-gutter-md">
           <q-input
+            dense
+            :dark="!isLight"
             v-model="form.nombres"
             label="Nombre(s)"
-            outlined
             class="col-12 col-md-4"
           />
 
           <q-input
+            dense
+            :dark="!isLight"
             v-model="form.apellidoPaterno"
             label="Apellido paterno"
-            outlined
             class="col-12 col-md-4"
           />
 
           <q-input
+            dense
+            :dark="!isLight"
             v-model="form.apellidoMaterno"
             label="Apellido materno"
-            outlined
             class="col-12 col-md-4"
           />
 
           <q-input
+            dense
+            :dark="!isLight"
             v-model="form.correo"
             label="Correo electrónico"
-            outlined
             class="col-12 col-md-6"
           />
 
           <q-input
+            dense
+            :dark="!isLight"
             v-model="form.telefono"
             label="Teléfono móvil"
-            outlined
             class="col-12 col-md-6"
           />
 
           <q-input
+            dense
+            :dark="!isLight"
             v-model.number="form.cuatrimestre"
             label="Cuatrimestre"
             type="number"
-            outlined
             class="col-12 col-md-6"
           />
 
           <q-input
+            dense
+            :dark="!isLight"
             v-model="form.grupo"
             label="Grupo"
-            outlined
             class="col-12 col-md-6"
           />
         </div>
@@ -91,9 +98,10 @@
 
         <div class="row q-col-gutter-md items-center">
           <q-file
+            dense
+            :dark="!isLight"
             v-model="archivoCsv"
             label="Cargar archivo CSV"
-            outlined
             accept=".csv"
             class="col-12 col-md-6"
           />
@@ -147,15 +155,19 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
-import { useQuasar } from 'quasar';
-import { useRouter } from 'vue-router';
-import { AxiosError } from 'axios';
-import Papa from 'papaparse';
-import { api } from '../services/api';
+import { reactive, ref } from "vue";
+import { useQuasar } from "quasar";
+import { useRouter } from "vue-router";
+import { AxiosError } from "axios";
+import Papa from "papaparse";
+import { api } from "../services/api";
+import { useThemeMode } from "../composables/useThemeMode";
+import { useAdminCongreso } from "../composables/useAdminCongreso";
 
 const $q = useQuasar();
 const router = useRouter();
+const { isLight } = useThemeMode();
+const { selectedCongressId, selectedCongress } = useAdminCongreso();
 
 interface ParticipanteUtvm {
   nombres: string;
@@ -176,98 +188,96 @@ const participantes = ref<ParticipanteUtvm[]>([]);
 const archivoCsv = ref<File | null>(null);
 
 const form = reactive<ParticipanteUtvm>({
-  nombres: '',
-  apellidoPaterno: '',
-  apellidoMaterno: '',
-  correo: '',
-  telefono: '',
+  nombres: "",
+  apellidoPaterno: "",
+  apellidoMaterno: "",
+  correo: "",
+  telefono: "",
   cuatrimestre: 1,
-  grupo: '',
+  grupo: ""
 });
 
 const columns = [
   {
-    name: 'nombres',
-    label: 'Nombre(s)',
-    field: 'nombres',
-    align: 'left' as const,
+    name: "nombres",
+    label: "Nombre(s)",
+    field: "nombres",
+    align: "left" as const
   },
   {
-    name: 'apellidoPaterno',
-    label: 'Apellido paterno',
-    field: 'apellidoPaterno',
-    align: 'left' as const,
+    name: "apellidoPaterno",
+    label: "Apellido paterno",
+    field: "apellidoPaterno",
+    align: "left" as const
   },
   {
-    name: 'correo',
-    label: 'Correo',
-    field: 'correo',
-    align: 'left' as const,
+    name: "correo",
+    label: "Correo",
+    field: "correo",
+    align: "left" as const
   },
   {
-    name: 'telefono',
-    label: 'Teléfono',
-    field: 'telefono',
-    align: 'left' as const,
+    name: "telefono",
+    label: "Teléfono",
+    field: "telefono",
+    align: "left" as const
   },
   {
-    name: 'cuatrimestre',
-    label: 'Cuatrimestre',
-    field: 'cuatrimestre',
-    align: 'center' as const,
+    name: "cuatrimestre",
+    label: "Cuatrimestre",
+    field: "cuatrimestre",
+    align: "center" as const
   },
   {
-    name: 'grupo',
-    label: 'Grupo',
-    field: 'grupo',
-    align: 'center' as const,
+    name: "grupo",
+    label: "Grupo",
+    field: "grupo",
+    align: "center" as const
   },
   {
-    name: 'acciones',
-    label: 'Acciones',
-    field: 'acciones',
-    align: 'center' as const,
-  },
+    name: "acciones",
+    label: "Acciones",
+    field: "acciones",
+    align: "center" as const
+  }
 ];
 
 function limpiarFormulario() {
-  form.nombres = '';
-  form.apellidoPaterno = '';
-  form.apellidoMaterno = '';
-  form.correo = '';
-  form.telefono = '';
+  form.nombres = "";
+  form.apellidoPaterno = "";
+  form.apellidoMaterno = "";
+  form.correo = "";
+  form.telefono = "";
   form.cuatrimestre = 1;
-  form.grupo = '';
+  form.grupo = "";
 }
 
 function participanteValido(participante: ParticipanteUtvm): boolean {
   return (
-    participante.nombres.trim() !== '' &&
-    participante.apellidoPaterno.trim() !== '' &&
-    participante.correo.trim() !== '' &&
-    participante.telefono.trim() !== '' &&
+    participante.nombres.trim() !== "" &&
+    participante.apellidoPaterno.trim() !== "" &&
+    participante.correo.trim() !== "" &&
+    participante.telefono.trim() !== "" &&
     participante.cuatrimestre > 0 &&
-    participante.grupo.trim() !== ''
+    participante.grupo.trim() !== ""
   );
 }
 
 function agregarParticipante() {
   if (!participanteValido(form)) {
     $q.notify({
-      type: 'negative',
-      message: 'Completa todos los campos obligatorios',
+      type: "negative",
+      message: "Completa todos los campos obligatorios"
     });
     return;
   }
 
-  const correoExiste = participantes.value.some(
-    (p) => p.correo === form.correo,
-  );
+  const correoExiste = participantes.value.some(p => p.correo === form.correo);
 
   if (correoExiste) {
     $q.notify({
-      type: 'warning',
-      message: 'Ese correo ya fue agregado',
+      type: "warning",
+      message: "Ese correo ya fue agregado"
     });
     return;
   }
@@ -275,8 +285,8 @@ function agregarParticipante() {
   participantes.value.push({ ...form });
 
   $q.notify({
-    type: 'positive',
-    message: 'Participante agregado a la lista',
+    type: "positive",
+    message: "Participante agregado a la lista"
   });
 
   limpiarFormulario();
@@ -289,8 +299,8 @@ function eliminarParticipante(index: number) {
 function importarCsv() {
   if (!archivoCsv.value) {
     $q.notify({
-      type: 'warning',
-      message: 'Selecciona un archivo CSV',
+      type: "warning",
+      message: "Selecciona un archivo CSV"
     });
     return;
   }
@@ -298,49 +308,53 @@ function importarCsv() {
   Papa.parse<Record<string, string>>(archivoCsv.value, {
     header: true,
     skipEmptyLines: true,
-    complete: (results) => {
-      const registros: ParticipanteUtvm[] = results.data.map((fila) => ({
-        nombres: fila.nombres?.trim() ?? '',
-        apellidoPaterno: fila.apellidoPaterno?.trim() ?? '',
-        apellidoMaterno: fila.apellidoMaterno?.trim() ?? '',
-        correo: fila.correo?.trim() ?? '',
-        telefono: fila.telefono?.trim() ?? '',
+    complete: results => {
+      const registros: ParticipanteUtvm[] = results.data.map(fila => ({
+        nombres: fila.nombres?.trim() ?? "",
+        apellidoPaterno: fila.apellidoPaterno?.trim() ?? "",
+        apellidoMaterno: fila.apellidoMaterno?.trim() ?? "",
+        correo: fila.correo?.trim() ?? "",
+        telefono: fila.telefono?.trim() ?? "",
         cuatrimestre: Number(fila.cuatrimestre) || 0,
-        grupo: fila.grupo?.trim() ?? '',
+        grupo: fila.grupo?.trim() ?? ""
       }));
 
-      const registrosValidos = registros.filter((participante) =>
-        participanteValido(participante),
+      const registrosValidos = registros.filter(participante =>
+        participanteValido(participante)
       );
 
       const nuevos = registrosValidos.filter(
-        (participante) =>
-          !participantes.value.some((p) => p.correo === participante.correo),
+        participante =>
+          !participantes.value.some(p => p.correo === participante.correo)
       );
 
       participantes.value.push(...nuevos);
 
       $q.notify({
-        type: 'positive',
-        message: `CSV importado correctamente. Registros agregados: ${nuevos.length}`,
+        type: "positive",
+        message: `CSV importado correctamente. Registros agregados: ${nuevos.length}`
       });
 
       archivoCsv.value = null;
     },
     error: () => {
       $q.notify({
-        type: 'negative',
-        message: 'Error al leer el archivo CSV',
+        type: "negative",
+        message: "Error al leer el archivo CSV"
       });
-    },
+    }
   });
 }
 
 async function guardarParticipantes() {
+  if (!selectedCongressId.value) {
+    $q.notify({ type: "warning", message: "Selecciona un congreso antes de guardar." });
+    return;
+  }
   if (participantes.value.length === 0) {
     $q.notify({
-      type: 'warning',
-      message: 'No hay participantes para guardar',
+      type: "warning",
+      message: "No hay participantes para guardar"
     });
     return;
   }
@@ -348,24 +362,27 @@ async function guardarParticipantes() {
   loading.value = true;
 
   try {
-    await api.post('/utvm/multiple', participantes.value);
+    await api.post("/utvm/multiple", participantes.value.map(item => ({
+      ...item,
+      congresoId: selectedCongressId.value
+    })));
 
     $q.notify({
-      type: 'positive',
-      message: 'Participantes UTVM guardados correctamente',
+      type: "positive",
+      message: "Participantes UTVM guardados correctamente"
     });
 
     participantes.value = [];
   } catch (error: unknown) {
-    let mensaje = 'Error desconocido';
+    let mensaje = "Error desconocido";
 
     if (error instanceof AxiosError) {
       const data = error.response?.data as ErrorBackend | undefined;
       const mensajeBackend = data?.message;
 
       if (Array.isArray(mensajeBackend)) {
-        mensaje = mensajeBackend.join(', ');
-      } else if (typeof mensajeBackend === 'string') {
+        mensaje = mensajeBackend.join(", ");
+      } else if (typeof mensajeBackend === "string") {
         mensaje = mensajeBackend;
       } else {
         mensaje = error.message;
@@ -375,8 +392,8 @@ async function guardarParticipantes() {
     }
 
     $q.notify({
-      type: 'negative',
-      message: mensaje,
+      type: "negative",
+      message: mensaje
     });
   } finally {
     loading.value = false;
@@ -384,10 +401,6 @@ async function guardarParticipantes() {
 }
 
 function goToParticipantes() {
-  void router.push('/participantes');
+  void router.push("/participantes");
 }
 </script>
-
-<style lang="scss">
-@import "../css/registro-ems-utvm.scss";
-</style>

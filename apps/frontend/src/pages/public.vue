@@ -76,6 +76,19 @@
             @click="pedirConfirmacionCerrarSesion"
           />
         </nav>
+
+        <q-btn
+          flat
+          dense
+          round
+          class="public-theme-toggle"
+          :icon="isLight ? 'dark_mode' : 'light_mode'"
+          :aria-label="isLight ? 'Activar modo oscuro' : 'Activar modo claro'"
+          :aria-pressed="isLight"
+          @click="toggleTheme"
+        >
+          <q-tooltip>{{ isLight ? "Modo oscuro" : "Modo claro" }}</q-tooltip>
+        </q-btn>
       </q-toolbar>
     </q-header>
 
@@ -254,6 +267,7 @@ import { useRoute, useRouter } from "vue-router";
 import CentroAyuda from "@/components/centroAyuda.vue";
 import { api } from "@/services/api";
 import { salirParticipante } from "@/services/participanteSessionService";
+import { useThemeMode } from "@/composables/useThemeMode";
 
 interface PublicLink {
   label: string;
@@ -277,6 +291,7 @@ interface CongresoPublico {
 const route = useRoute();
 const router = useRouter();
 const $q = useQuasar();
+const { isLight, toggleTheme } = useThemeMode();
 
 const menuOpen = ref(false);
 const sesionActiva = ref(false);
@@ -344,6 +359,11 @@ const publicLinks: PublicLink[] = [
     label: "Inicio",
     to: "/",
     icon: "home"
+  },
+  {
+    label: "Noticias",
+    to: "/noticias",
+    icon: "newspaper"
   },
   {
     label: "Panelistas",

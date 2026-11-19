@@ -1,34 +1,69 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header class="qr-header">
-      <q-toolbar>
-        <q-icon name="verified_user" size="28px" />
-        <q-toolbar-title>{{
-          usuarioPersonal?.rol === "VALIDADOR"
-            ? "Control de acceso"
-            : "Personal del congreso"
-        }}</q-toolbar-title>
+  <q-layout view="lHh Lpr lFf" class="personal-access-layout">
+    <q-header class="personal-header">
+      <q-toolbar class="personal-toolbar">
+        <router-link to="/" class="personal-header__brand">
+          <span class="personal-header__mark">
+            <q-icon name="verified_user" size="22px" />
+          </span>
+          <span class="personal-header__title">{{
+            usuarioPersonal?.rol === "VALIDADOR"
+              ? "Control de acceso"
+              : "Personal del congreso"
+          }}</span>
+        </router-link>
+        <q-space />
         <template v-if="usuarioPersonal">
-          <span class="q-mr-sm gt-xs">{{ usuarioPersonal.nombre }}</span>
+          <span class="personal-header__user gt-xs">{{ usuarioPersonal.nombre }}</span>
           <q-btn
             v-if="usuarioPersonal.rol === 'VALIDADOR'"
             flat
             no-caps
             icon="qr_code_scanner"
-            label="Escanear"
+            :label="$q.screen.gt.xs ? 'Escanear' : undefined"
             to="/validar"
+            class="personal-header__action"
+            aria-label="Escanear QR"
           />
           <q-btn
             v-else
             flat
             no-caps
             icon="dashboard"
-            label="Panel"
+            :label="$q.screen.gt.xs ? 'Panel' : undefined"
             to="/admin/dashboard"
+            class="personal-header__action"
+            aria-label="Ir al panel"
           />
-          <q-btn flat no-caps icon="logout" label="Salir" @click="cerrar" />
+          <q-btn
+            flat
+            no-caps
+            icon="logout"
+            :label="$q.screen.gt.xs ? 'Salir' : undefined"
+            class="personal-header__action"
+            aria-label="Cerrar sesión"
+            @click="cerrar"
+          />
         </template>
-        <q-btn v-else flat no-caps icon="home" label="Inicio" to="/" />
+        <q-btn
+          v-else
+          flat
+          no-caps
+          icon="home"
+          :label="$q.screen.gt.xs ? 'Inicio' : undefined"
+          to="/"
+          class="personal-header__action"
+          aria-label="Volver al inicio"
+        />
+        <q-btn
+          round
+          flat
+          :icon="isLight ? 'dark_mode' : 'light_mode'"
+          :aria-label="isLight ? 'Activar modo oscuro' : 'Activar modo claro'"
+          :title="isLight ? 'Activar modo oscuro' : 'Activar modo claro'"
+          class="personal-header__theme"
+          @click="toggleTheme"
+        />
       </q-toolbar>
     </q-header>
 
@@ -54,6 +89,7 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
 import { useQuasar } from "quasar";
+import { useThemeMode } from "../composables/useThemeMode";
 import {
   usuarioPersonal,
   salirPersonal,
@@ -61,6 +97,7 @@ import {
 } from "../services/personalService";
 const router = useRouter();
 const $q = useQuasar();
+const { isLight, toggleTheme } = useThemeMode();
 async function cerrar() {
   try {
     await salirPersonal();
@@ -70,10 +107,3 @@ async function cerrar() {
   }
 }
 </script>
-
-<style scoped>
-.qr-header {
-  background: #064e3b;
-  color: white;
-}
-</style>
