@@ -21,7 +21,6 @@ import {
 import { ImagenContenidoDestino } from '../enums/imagen-contenido-destino.enum';
 import { ContenidoImagenService } from '../services/contenido-imagen.service';
 
-// TODO: Restringir estos endpoints al administrador autenticado.
 @Controller('gestion-contenido/imagenes')
 export class ContenidoImagenController {
   constructor(private readonly service: ContenidoImagenService) {}

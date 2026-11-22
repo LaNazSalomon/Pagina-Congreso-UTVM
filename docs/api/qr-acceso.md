@@ -5,6 +5,13 @@ Base URL local: `http://localhost:3000/api`
 El QR contiene un token opaco aleatorio. El backend almacena únicamente su
 hash SHA-256. Un mismo QR puede utilizarse una vez por cada día autorizado.
 
+**Autenticación actual:** consultar o confirmar un QR exige una sesión de
+Validador. Emitir y revocar exige Administrador; el reenvío automático también
+admite al participante dueño del registro. Los ejemplos `curl` de operaciones
+privadas requieren la cookie de esa sesión y, para escrituras, su cabecera CSRF.
+Los pasos de acceso y nombres de cabeceras están en
+[Personal y roles](personal-roles.md).
+
 ## Prueba rápida de extremo a extremo
 
 ### 1. Preparar el entorno
@@ -16,7 +23,8 @@ pnpm install
 ```
 
 Configura PostgreSQL y el correo en `apps/backend/.env`. Para probar el flujo
-visual completo, apunta el QR al frontend, que usa enrutamiento hash:
+visual completo, apunta el QR al frontend, que usa enrutamiento history y admite
+enlaces hash antiguos:
 
 ```dotenv
 QR_ACCESS_BASE_URL=http://localhost:9000/acceso/qr
@@ -253,7 +261,7 @@ curl -sS -o /tmp/qr-confirmacion-2.json -w 'peticion 2: %{http_code}\n' \
 wait
 ```
 
-El resultado correcto es una respuesta `200` y una `409`. Nunca deben existir
+El resultado correcto es una respuesta `201` y una `409`. Nunca deben existir
 dos confirmaciones exitosas para el mismo participante y día.
 
 ## Revocar manualmente
@@ -310,11 +318,14 @@ pnpm --filter frontend build
 ## Códigos de error
 
 - `400`: token, UUID, días o cuerpo inválidos.
+- `401`: sesión ausente/caducada o token CSRF inválido.
+- `403`: rol sin permiso u origen no permitido.
 - `404`: `QR_NO_ENCONTRADO` o recurso inexistente.
 - `409`: `ACCESO_YA_UTILIZADO`.
 - `422`: QR inactivo o expirado, participante no validado, día no autorizado
   o fecha fuera del congreso.
 - `503`: el QR se generó, pero el proveedor SMTP no pudo enviar el correo.
 
-Autenticación, bitácora de escaneos, identificación del validador, salida y
-reingreso quedan fuera de esta fase.
+La autenticación y la identificación del validador están implementadas. Cada
+confirmación guarda `validador_id` y la fecha de entrada. La bitácora de todos
+los intentos de escaneo, salida y reingreso quedan fuera de esta fase.

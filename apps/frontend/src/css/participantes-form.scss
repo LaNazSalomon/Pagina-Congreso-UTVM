@@ -1,0 +1,241 @@
+// Formularios de Participantes: misma superficie y campos que Ponentes.
+.participant-entry-page {
+  min-height: 100vh;
+  color: var(--text-main);
+
+  .participant-entry-card {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .section-title {
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+  .q-card__section {
+    padding: 18px 22px;
+  }
+  .q-field {
+    margin-bottom: 10px;
+  }
+  .q-field__label,
+  .q-field__native,
+  .q-field__input,
+  .q-field__marginal {
+    color: var(--text-main);
+  }
+  .q-field__control::before {
+    border-bottom-color: rgba(215, 229, 226, 0.48);
+  }
+  .q-field--focused .q-field__control::after {
+    border-bottom-color: #00e676;
+  }
+  .btn-registro {
+    min-height: 42px;
+    padding: 0 18px;
+    border-radius: 6px;
+    background: #00e676;
+    color: #06221a;
+    font-weight: 700;
+  }
+  .q-table {
+    color: var(--text-main);
+    background: rgba(7, 30, 27, 0.45);
+    border-color: var(--surface-border);
+  }
+  .q-table thead tr {
+    background: rgba(0, 230, 118, 0.08);
+  }
+  .q-table th,
+  .q-table td,
+  .q-table__bottom {
+    color: var(--text-main);
+    border-color: var(--surface-border);
+  }
+}
+
+.admin-form-dialog.participant-form-dialog {
+  width: min(1100px, 96vw);
+  max-width: 96vw;
+  background: rgba(9, 30, 26, 0.98);
+  border: 1px solid rgba(0, 230, 118, 0.18);
+  border-radius: 20px;
+
+  .admin-form-dialog__header {
+    gap: 12px;
+    padding: 20px 24px 8px;
+  }
+  .admin-form-dialog__header .text-h4 {
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    line-height: 1.25;
+  }
+  .admin-form-dialog__subtitle {
+    margin-top: 2px;
+  }
+  .q-separator {
+    display: none;
+  }
+  .admin-form-dialog__body {
+    padding: 18px 32px 28px;
+  }
+  .q-field__label,
+  .q-field__native,
+  .q-field__input,
+  .q-field__marginal {
+    color: var(--text-main);
+  }
+  .q-field__control::before {
+    border-bottom-color: rgba(215, 229, 226, 0.48);
+  }
+  .q-field--focused .q-field__control::after {
+    border-bottom-color: #00e676;
+  }
+  .admin-form-dialog__actions {
+    padding-top: 16px;
+  }
+  .admin-form-dialog__submit {
+    min-width: 188px;
+    box-shadow: none;
+  }
+}
+
+// El alta NSU contiene secciones de pago y carga de archivos propias.
+.registro-page {
+  --color-blue: #00e676;
+  --color-border: rgba(0, 230, 118, 0.28);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(0, 230, 118, 0.12),
+      transparent 35%
+    ),
+    #071e1b;
+
+  .registro-header h1 {
+    font-size: clamp(2rem, 3vw, 2.25rem) !important;
+    letter-spacing: -0.02em;
+  }
+  .registro-header p {
+    margin: 2px 0 0;
+    color: #8ca09a;
+    font-size: 0.9rem;
+  }
+  .registro-card {
+    background: rgba(9, 30, 26, 0.92);
+    border-color: rgba(0, 230, 118, 0.18);
+    border-radius: 20px;
+  }
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .section-title .q-icon {
+    color: #00e676;
+  }
+  .light-input {
+    background: transparent;
+    border-radius: 0;
+  }
+  .light-input .q-field__control {
+    height: 56px;
+    min-height: 56px;
+    color: #fff;
+    border-radius: 0;
+  }
+  .light-input .q-field__control::before {
+    border: 0 !important;
+    border-bottom: 1px solid rgba(215, 229, 226, 0.48) !important;
+  }
+  .light-input .q-field__control::after {
+    border: 0 !important;
+    border-bottom: 2px solid transparent !important;
+  }
+  .light-input.q-field--focused .q-field__control::after {
+    border-bottom-color: #00e676 !important;
+  }
+  .light-input.q-field--focused {
+    box-shadow: none;
+  }
+  .light-input .q-field__label,
+  .light-input .q-field__native,
+  .light-input .q-field__input {
+    font-weight: 400;
+  }
+  .dark-box,
+  .upload-box,
+  .totals-box {
+    background: rgba(7, 30, 27, 0.65);
+    border-color: rgba(0, 230, 118, 0.22);
+  }
+  .days-grid .q-checkbox,
+  .file-input {
+    background: rgba(0, 230, 118, 0.045);
+    border-color: rgba(0, 230, 118, 0.22);
+  }
+  .btn-primary-blue {
+    background: #00e676 !important;
+    border-color: #00e676 !important;
+  }
+  .btn-primary-blue:hover {
+    background: #66f5b5 !important;
+    border-color: #66f5b5 !important;
+  }
+  .btn-outline-green,
+  .btn-primary-green {
+    color: #00e676 !important;
+    border-color: #00e676 !important;
+    background: transparent !important;
+  }
+  .registro-table {
+    border-color: rgba(0, 230, 118, 0.22);
+  }
+  .q-banner.bg-red-1 {
+    color: #ffb4b4 !important;
+    background: rgba(255, 82, 82, 0.12) !important;
+    border: 1px solid rgba(255, 82, 82, 0.28);
+    border-radius: 10px;
+  }
+}
+
+body.theme-light {
+  .participant-entry-page .q-field__label,
+  .participant-entry-page .q-field__native,
+  .participant-entry-page .q-field__input,
+  .participant-entry-page .q-field__marginal,
+  .participant-entry-page .q-table,
+  .participant-entry-page .q-table th,
+  .participant-entry-page .q-table td {
+    color: #173a33;
+  }
+  .participant-entry-page .q-table {
+    background: rgba(255, 255, 255, 0.8);
+  }
+  .admin-form-dialog.participant-form-dialog {
+    background: #fff;
+    color: #173a33;
+  }
+  .admin-form-dialog.participant-form-dialog .q-field__label,
+  .admin-form-dialog.participant-form-dialog .q-field__native,
+  .admin-form-dialog.participant-form-dialog .q-field__input,
+  .admin-form-dialog.participant-form-dialog .q-field__marginal {
+    color: #173a33;
+  }
+}
+
+@media (max-width: 700px) {
+  .participant-entry-page .q-card__section {
+    padding: 16px 8px;
+  }
+  .admin-form-dialog.participant-form-dialog .admin-form-dialog__header {
+    padding: 16px;
+  }
+  .admin-form-dialog.participant-form-dialog .admin-form-dialog__body {
+    padding: 16px;
+  }
+  .registro-page .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .registro-page .registro-fechas-box {
+    grid-column: 1 / -1;
+  }
+}

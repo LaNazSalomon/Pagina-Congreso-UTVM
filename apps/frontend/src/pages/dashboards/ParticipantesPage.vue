@@ -28,6 +28,13 @@
       {{ error }}
     </q-banner>
 
+    <q-banner v-if="tab === 'externos' && registroIdDestacado" rounded class="q-mb-md">
+      Mostrando el registro externo seleccionado desde los avisos.
+      <template #action>
+        <q-btn flat no-caps label="Ver todos" @click="quitarFiltroAviso" />
+      </template>
+    </q-banner>
+
     <q-card flat bordered class="admin-card">
       <q-tabs
         v-model="tab"
@@ -293,7 +300,7 @@
 
           <q-table
             class="dashboard-table"
-            :rows="externos"
+            :rows="externosVisibles"
             :columns="externosColumns"
             row-key="id"
             flat
@@ -395,11 +402,18 @@
     </q-card>
 
     <q-dialog v-model="emsDialogOpen">
-      <q-card class="admin-form-dialog">
+      <q-card class="admin-form-dialog participant-form-dialog">
         <q-card-section class="admin-form-dialog__header">
-          <q-avatar class="admin-form-dialog__icon" icon="school" />
+          <q-btn
+            flat
+            round
+            icon="arrow_back"
+            aria-label="Cerrar formulario"
+            :disable="saving"
+            v-close-popup
+          />
           <div>
-            <div class="text-h6 text-weight-bold">{{
+            <div class="text-h4 text-weight-bold">{{
               editingEmsId
                 ? "Editar participante EMS"
                 : "Nuevo participante EMS"
@@ -415,28 +429,39 @@
             class="admin-form row q-col-gutter-md"
             @submit.prevent="saveEms"
           >
+            <q-select
+              v-model="emsForm.congresoId"
+              :options="opcionesCongresoAdmin"
+              emit-value
+              map-options
+              class="col-12"
+              label="Congreso"
+              :rules="[requiredRule]"
+              dense
+              :dark="!isLight"
+            />
             <q-input
               v-model="emsForm.nombres"
               class="col-12 col-md-6"
               label="Nombres"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="emsForm.apellidoPaterno"
               class="col-12 col-md-6"
               label="Apellido paterno"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="emsForm.apellidoMaterno"
               class="col-12 col-md-6"
               label="Apellido materno"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="emsForm.correo"
@@ -444,24 +469,24 @@
               label="Correo"
               type="email"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="emsForm.institucion"
               class="col-12 col-md-6"
               label="Institución"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="emsForm.carrera"
               class="col-12 col-md-6"
               label="Carrera"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="emsForm.telefono"
@@ -469,8 +494,8 @@
               label="Teléfono"
               mask="###############"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <div class="admin-form-dialog__actions col-12">
               <q-btn
@@ -484,7 +509,7 @@
                 class="admin-form-dialog__submit"
                 color="primary"
                 icon="save"
-                label="Guardar"
+                label="Guardar participante"
                 type="submit"
                 :loading="saving"
                 :disable="saving"
@@ -496,11 +521,18 @@
     </q-dialog>
 
     <q-dialog v-model="utvmDialogOpen">
-      <q-card class="admin-form-dialog">
+      <q-card class="admin-form-dialog participant-form-dialog">
         <q-card-section class="admin-form-dialog__header">
-          <q-avatar class="admin-form-dialog__icon" icon="badge" />
+          <q-btn
+            flat
+            round
+            icon="arrow_back"
+            aria-label="Cerrar formulario"
+            :disable="saving"
+            v-close-popup
+          />
           <div>
-            <div class="text-h6 text-weight-bold">{{
+            <div class="text-h4 text-weight-bold">{{
               editingUtvmId
                 ? "Editar participante UTVM"
                 : "Nuevo participante UTVM"
@@ -516,28 +548,39 @@
             class="admin-form row q-col-gutter-md"
             @submit.prevent="saveUtvm"
           >
+            <q-select
+              v-model="utvmForm.congresoId"
+              :options="opcionesCongresoAdmin"
+              emit-value
+              map-options
+              class="col-12"
+              label="Congreso"
+              :rules="[requiredRule]"
+              dense
+              :dark="!isLight"
+            />
             <q-input
               v-model="utvmForm.nombres"
               class="col-12 col-md-6"
               label="Nombres"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="utvmForm.apellidoPaterno"
               class="col-12 col-md-6"
               label="Apellido paterno"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="utvmForm.apellidoMaterno"
               class="col-12 col-md-6"
               label="Apellido materno"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="utvmForm.correo"
@@ -545,8 +588,8 @@
               label="Correo"
               type="email"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model.number="utvmForm.cuatrimestre"
@@ -556,16 +599,16 @@
               min="1"
               max="11"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="utvmForm.grupo"
               class="col-12 col-md-4"
               label="Grupo"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="utvmForm.telefono"
@@ -573,8 +616,8 @@
               label="Teléfono"
               mask="###############"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <div class="admin-form-dialog__actions col-12">
               <q-btn
@@ -588,7 +631,7 @@
                 class="admin-form-dialog__submit"
                 color="primary"
                 icon="save"
-                label="Guardar"
+                label="Guardar participante"
                 type="submit"
                 :loading="saving"
                 :disable="saving"
@@ -600,11 +643,18 @@
     </q-dialog>
 
     <q-dialog v-model="externoDialogOpen">
-      <q-card class="admin-form-dialog">
+      <q-card class="admin-form-dialog participant-form-dialog">
         <q-card-section class="admin-form-dialog__header">
-          <q-avatar class="admin-form-dialog__icon" icon="person" />
+          <q-btn
+            flat
+            round
+            icon="arrow_back"
+            aria-label="Cerrar formulario"
+            :disable="saving"
+            v-close-popup
+          />
           <div>
-            <div class="text-h6 text-weight-bold">{{
+            <div class="text-h4 text-weight-bold">{{
               editingExternoId
                 ? "Editar participante externo"
                 : "Nuevo participante externo"
@@ -625,23 +675,23 @@
               class="col-12 col-md-6"
               label="Nombre"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="externoForm.apellidoPaterno"
               class="col-12 col-md-6"
               label="Apellido paterno"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="externoForm.apellidoMaterno"
               class="col-12 col-md-6"
               label="Apellido materno"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="externoForm.correo"
@@ -649,8 +699,8 @@
               label="Correo"
               type="email"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="externoForm.telefono"
@@ -658,35 +708,48 @@
               label="Teléfono"
               mask="###############"
               :rules="[requiredRule]"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model="externoForm.institucion"
               class="col-12 col-md-6"
               label="Institución"
-              outlined
               dense
+              :dark="!isLight"
+            />
+            <q-select
+              v-model="congresoId"
+              class="col-12"
+              :options="opcionesCongreso"
+              label="Congreso"
+              emit-value
+              map-options
+              dense
+              :dark="!isLight"
+              :loading="cargandoDias"
+              :disable="!!editingExternoId || saving"
             />
             <q-select
               v-model="externoForm.dias"
               class="col-12 col-md-6"
               :options="diasOptions"
-              label="Días"
+              label="Fechas de asistencia"
               multiple
               emit-value
               map-options
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-input
               v-model.number="externoForm.total"
               class="col-12 col-md-3"
-              label="Total"
+              label="Total calculado"
+              readonly
               type="number"
               min="0"
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-select
               v-model="externoForm.status"
@@ -695,8 +758,8 @@
               label="Estatus"
               emit-value
               map-options
-              outlined
               dense
+              :dark="!isLight"
             />
             <q-file
               v-if="!editingExternoId"
@@ -704,8 +767,8 @@
               class="col-12"
               label="Comprobante"
               accept=".pdf,.jpg,.jpeg,.png"
-              outlined
               dense
+              :dark="!isLight"
             />
             <div class="admin-form-dialog__actions col-12">
               <q-btn
@@ -719,7 +782,7 @@
                 class="admin-form-dialog__submit"
                 color="primary"
                 icon="save"
-                label="Guardar"
+                label="Guardar participante"
                 type="submit"
                 :loading="saving"
                 :disable="saving"
@@ -733,14 +796,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch, nextTick } from "vue";
 import { useQuasar, type QTableColumn } from "quasar";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { api } from "../../services/api";
 import { abrirComprobante } from "../../services/comprobanteService";
 import { getQrApiError, qrAccessService } from "../../services/qrAccessService";
 import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
+import { useThemeMode } from "../../composables/useThemeMode";
+import { useAdminCongreso } from "../../composables/useAdminCongreso";
 import { useParticipantesAdmin } from "../../composables/useParticipantesAdmin";
+import {
+  useDiasRegistro,
+  formatoDiasRegistro,
+  type DiaRegistro
+} from "../../composables/useDiasRegistro";
 import type { QrParticipantType } from "../../types/qr-access";
 import type {
   ParticipanteEms,
@@ -756,7 +826,27 @@ import type {
 const $q = useQuasar();
 const { confirmDelete } = useDeleteConfirmation();
 const router = useRouter();
-const tab = ref("ems");
+const route = useRoute();
+const { isLight } = useThemeMode();
+const { selectedCongressId, sortedCongresses } = useAdminCongreso();
+const opcionesCongresoAdmin = computed(() =>
+  sortedCongresses.value.map(item => ({ label: item.nombre, value: item.id }))
+);
+const {
+  congresos,
+  congresoId,
+  opcionesCongreso,
+  diasOptions,
+  costoPorDia,
+  cargandoDias,
+  errorDias
+} = useDiasRegistro("EXTERNO");
+let preparandoExterno = false;
+const tab = ref(typeof route.query.tab === "string" && ["ems", "utvm", "nsu", "externos"].includes(route.query.tab)
+  ? route.query.tab : "ems");
+const registroIdDestacado = computed(() =>
+  typeof route.query.registro === "string" ? route.query.registro : ""
+);
 const saving = ref(false);
 const emsDialogOpen = ref(false);
 const utvmDialogOpen = ref(false);
@@ -788,8 +878,26 @@ const {
   updateExternoStatus,
   removeExterno
 } = useParticipantesAdmin();
+const externosVisibles = computed(() =>
+  registroIdDestacado.value
+    ? externos.value.filter(item => item.id === registroIdDestacado.value)
+    : externos.value
+);
+
+watch(() => route.query.tab, value => {
+  if (typeof value === "string" && ["ems", "utvm", "nsu", "externos"].includes(value)) {
+    tab.value = value;
+  }
+});
+
+function quitarFiltroAviso() {
+  const query = { ...route.query };
+  delete query.registro;
+  void router.replace({ query });
+}
 
 const emptyEmsForm = (): ParticipanteEmsPayload => ({
+  congresoId: selectedCongressId.value,
   nombres: "",
   apellidoPaterno: "",
   apellidoMaterno: "",
@@ -800,6 +908,7 @@ const emptyEmsForm = (): ParticipanteEmsPayload => ({
 });
 
 const emptyUtvmForm = (): ParticipanteUtvmPayload => ({
+  congresoId: selectedCongressId.value,
   nombres: "",
   apellidoPaterno: "",
   apellidoMaterno: "",
@@ -826,11 +935,17 @@ const emsForm = reactive<ParticipanteEmsPayload>(emptyEmsForm());
 const utvmForm = reactive<ParticipanteUtvmPayload>(emptyUtvmForm());
 const externoForm = reactive<ParticipanteExternoPayload>(emptyExternoForm());
 
-const diasOptions = [
-  { label: "Día 1", value: "dia_1" },
-  { label: "Día 2", value: "dia_2" },
-  { label: "Día 3", value: "dia_3" }
-];
+watch(congresoId, () => {
+  if (!preparandoExterno) externoForm.dias = [];
+});
+watch(
+  () => externoForm.dias,
+  () => {
+    if (!preparandoExterno)
+      externoForm.total = (externoForm.dias.length * Math.round(costoPorDia.value * 100)) / 100;
+  },
+  { deep: true }
+);
 
 const externoStatusOptions = [
   { label: "Pendiente", value: "pendiente" },
@@ -950,7 +1065,7 @@ const externosColumns: QTableColumn[] = [
   {
     name: "dias",
     label: "Días",
-    field: (row: ParticipanteExterno) => row.dias.join(", "),
+    field: (row: ParticipanteExterno) => formatoDiasRegistro(row.dias),
     align: "left"
   },
   {
@@ -1082,6 +1197,7 @@ function openEmsDialog(row?: ParticipanteEms) {
     emsForm,
     row
       ? {
+          congresoId: row.congresoId ?? null,
           nombres: row.nombres,
           apellidoPaterno: row.apellidoPaterno,
           apellidoMaterno: row.apellidoMaterno ?? "",
@@ -1102,6 +1218,7 @@ async function saveEms() {
   try {
     if (editingEmsId.value) {
       await updateEms(editingEmsId.value, {
+        congresoId: emsForm.congresoId ?? null,
         nombres: emsForm.nombres.trim(),
         apellidoPaterno: emsForm.apellidoPaterno.trim(),
         apellidoMaterno: emsForm.apellidoMaterno?.trim() ?? "",
@@ -1143,6 +1260,7 @@ function openUtvmDialog(row?: ParticipanteUtvm) {
     utvmForm,
     row
       ? {
+          congresoId: row.congresoId ?? null,
           nombres: row.nombres,
           apellidoPaterno: row.apellidoPaterno,
           apellidoMaterno: row.apellidoMaterno ?? "",
@@ -1163,6 +1281,7 @@ async function saveUtvm() {
   try {
     if (editingUtvmId.value) {
       await updateUtvm(editingUtvmId.value, {
+        congresoId: utvmForm.congresoId ?? null,
         nombres: utvmForm.nombres.trim(),
         apellidoPaterno: utvmForm.apellidoPaterno.trim(),
         apellidoMaterno: utvmForm.apellidoMaterno?.trim() ?? "",
@@ -1198,27 +1317,62 @@ async function deleteUtvm(id: number) {
   );
 }
 
-function openExternoDialog(row?: ParticipanteExterno) {
-  editingExternoId.value = row?.id ?? null;
-  externoComprobante.value = null;
-  resetReactive(
-    externoForm,
-    row
-      ? {
-          nombre: row.nombre,
-          apellidoPaterno: row.apellidoPaterno,
-          apellidoMaterno: row.apellidoMaterno,
-          correo: row.correo,
-          telefono: row.telefono,
-          institucion: row.institucion,
-          dias: [...row.dias],
-          total: Number(row.total),
-          correoVerificado: row.correoVerificado,
-          status: row.status
-        }
-      : emptyExternoForm()
-  );
-  externoDialogOpen.value = true;
+async function openExternoDialog(row?: ParticipanteExterno) {
+  preparandoExterno = true;
+  try {
+    if (row?.congresoId) {
+      if (!congresos.value.some(item => item.id === row.congresoId)) {
+        const { data } = await api.get<DiaRegistro[]>(
+          `congresos/${row.congresoId}/dias-evento`
+        );
+        congresos.value.push({
+          id: row.congresoId,
+          nombre: row.congreso?.nombre ?? "Congreso del registro",
+          fechaInicio: data[0]?.fechaEvento ?? "",
+          fechaFin: data.at(-1)?.fechaEvento ?? "",
+          dias: data
+        });
+      }
+      congresoId.value = row.congresoId;
+    }
+    await nextTick();
+    editingExternoId.value = row?.id ?? null;
+    externoComprobante.value = null;
+    resetReactive(
+      externoForm,
+      row
+        ? {
+            nombre: row.nombre,
+            apellidoPaterno: row.apellidoPaterno,
+            apellidoMaterno: row.apellidoMaterno,
+            correo: row.correo,
+            telefono: row.telefono,
+            institucion: row.institucion,
+            dias:
+              row.diaEventoIds ??
+              diasOptions.value
+                .filter((dia, index) =>
+                  row.dias.some(
+                    value =>
+                      value === dia.fecha ||
+                      value.match(/^d[ií]a[\s_]*(\d+)$/i)?.[1] ===
+                        String(index + 1)
+                  )
+                )
+                .map(dia => dia.value),
+            total: Number(row.total),
+            correoVerificado: row.correoVerificado,
+            status: row.status
+          }
+        : emptyExternoForm()
+    );
+    externoDialogOpen.value = true;
+    await nextTick();
+  } catch {
+    notify("negative", "No se pudieron cargar las fechas del registro.");
+  } finally {
+    preparandoExterno = false;
+  }
 }
 
 async function saveExterno() {
@@ -1226,6 +1380,18 @@ async function saveExterno() {
 
   saving.value = true;
   try {
+    if (
+      !congresoId.value ||
+      !externoForm.dias.length ||
+      cargandoDias.value ||
+      errorDias.value
+    ) {
+      notify("warning", "Selecciona un congreso y sus fechas de asistencia.");
+      return;
+    }
+    const fechas = diasOptions.value
+      .filter(dia => externoForm.dias.includes(dia.value))
+      .map(dia => dia.fecha);
     if (editingExternoId.value) {
       await updateExterno(editingExternoId.value, {
         nombre: externoForm.nombre.trim(),
@@ -1234,7 +1400,9 @@ async function saveExterno() {
         correo: externoForm.correo.trim(),
         telefono: externoForm.telefono.trim(),
         institucion: externoForm.institucion?.trim() || null,
-        dias: [...externoForm.dias],
+        congresoId: congresoId.value,
+        diaEventoIds: [...externoForm.dias],
+        dias: fechas,
         total: Number(externoForm.total),
         status: externoForm.status
       });
@@ -1245,13 +1413,15 @@ async function saveExterno() {
       }
 
       const formData = new FormData();
+      formData.append("congresoId", congresoId.value);
+      formData.append("diaEventoIds", JSON.stringify(externoForm.dias));
       formData.append("nombre", externoForm.nombre);
       formData.append("apellidoPaterno", externoForm.apellidoPaterno);
       formData.append("apellidoMaterno", externoForm.apellidoMaterno ?? "");
       formData.append("correo", externoForm.correo);
       formData.append("telefono", externoForm.telefono);
       formData.append("institucion", externoForm.institucion ?? "");
-      formData.append("dias", JSON.stringify(externoForm.dias));
+      formData.append("dias", JSON.stringify(fechas));
       formData.append("total", String(externoForm.total));
       formData.append("comprobante", externoComprobante.value);
       await api.post("externos", formData, {

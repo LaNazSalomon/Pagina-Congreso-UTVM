@@ -6,19 +6,23 @@ export function useForosEmpresarialesQuery() {
   const data = ref<ForoEmpresarial[]>([]);
   const isRefreshing = ref(false);
   const error = ref<string | null>(null);
+  let loadRequest = 0;
 
-  const load = async () => {
+  const load = async (congresoId?: string) => {
+    const request = ++loadRequest;
     isRefreshing.value = true;
     error.value = null;
 
     try {
-      const response = await api.get<ForoEmpresarial[]>("foro-empresarial");
-      data.value = response.data;
+      const response = await api.get<ForoEmpresarial[]>("foro-empresarial", {
+        params: congresoId ? { congresoId } : undefined
+      });
+      if (request === loadRequest) data.value = response.data;
     } catch (loadError) {
-      error.value = "No se pudieron cargar los foros empresariales.";
+      if (request === loadRequest) error.value = "No se pudieron cargar los foros empresariales.";
       console.error(loadError);
     } finally {
-      isRefreshing.value = false;
+      if (request === loadRequest) isRefreshing.value = false;
     }
   };
 

@@ -22,12 +22,17 @@ describe('ReconocimientoEmisionService', () => {
     referencia_id: '7',
   };
 
-  function setup(talleres: unknown[], conferencias: unknown[]) {
+  function setup(
+    talleres: unknown[],
+    conferencias: unknown[],
+    legacy: unknown = null,
+  ) {
     const orIgnore = jest.fn().mockReturnThis();
     const execute = jest.fn().mockResolvedValue(undefined);
     const insert = jest.fn().mockReturnThis();
     const values = jest.fn().mockReturnThis();
     const reconocimientos = {
+      findOne: jest.fn().mockResolvedValue(legacy),
       createQueryBuilder: jest.fn(() => ({
         insert,
         values,
@@ -56,7 +61,7 @@ describe('ReconocimientoEmisionService', () => {
       inscripciones as never,
       resolver as never,
     );
-    return { service, values, orIgnore };
+    return { service, values, orIgnore, reconocimientos };
   }
 
   it('no crea registros si la consulta no devuelve actividades finalizadas', async () => {
@@ -73,15 +78,18 @@ describe('ReconocimientoEmisionService', () => {
     expect(emitted).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          clave_emision: 'taller:taller-1:participante:participante-1',
+          clave_emision:
+            'congreso:congreso-1:taller:taller-1:participante:participante-1',
           tipo: ReconocimientoTipo.GENERAL,
         }),
         expect.objectContaining({
-          clave_emision: 'taller:taller-1:ponente:ponente-1',
+          clave_emision:
+            'congreso:congreso-1:taller:taller-1:ponente:ponente-1',
           tipo: ReconocimientoTipo.TALLERISTA,
         }),
         expect.objectContaining({
-          clave_emision: 'conferencia:conferencia-1:ponente:ponente-1',
+          clave_emision:
+            'congreso:congreso-1:conferencia:conferencia-1:ponente:ponente-1',
           tipo: ReconocimientoTipo.CONFERENCISTA,
         }),
       ]),
@@ -97,5 +105,33 @@ describe('ReconocimientoEmisionService', () => {
     const keys = values.mock.calls.map(([value]) => value.clave_emision);
     expect(new Set(keys).size).toBe(2);
     expect(orIgnore).toHaveBeenCalledTimes(4);
+  });
+
+  it('respeta el registro anterior si la actividad sigue en el mismo congreso', async () => {
+    const { service, values } = setup([], [conferencia], {
+      congreso: { id: 'congreso-1' },
+    });
+    await service.prepareFinishedActivities();
+    expect(values).not.toHaveBeenCalled();
+  });
+
+  it('crea otro registro si la conferencia se trasladó de congreso', async () => {
+    const { service, values, reconocimientos } = setup([], [conferencia], {
+      congreso: { id: 'congreso-anterior' },
+    });
+    await service.prepareFinishedActivities();
+    expect(reconocimientos.findOne).toHaveBeenCalledWith({
+      where: {
+        clave_emision: 'conferencia:conferencia-1:ponente:ponente-1',
+      },
+      relations: { congreso: true },
+    });
+    expect(values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        clave_emision:
+          'congreso:congreso-1:conferencia:conferencia-1:ponente:ponente-1',
+        congreso,
+      }),
+    );
   });
 });

@@ -14,7 +14,6 @@ import { CreateBannerDto } from '../dto/create-banner.dto';
 import { UpdateBannerDto } from '../dto/update-banner.dto';
 import { BannerService } from '../services/banner.service';
 
-// TODO: Restringir estos endpoints al administrador autenticado.
 @Controller('gestion-contenido/banners')
 export class BannerController {
   constructor(private readonly service: BannerService) {}

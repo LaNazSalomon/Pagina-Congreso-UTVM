@@ -44,6 +44,12 @@ export class NsuParticipanteAdapter implements ParticipanteAdapter {
       referenciaId,
       nombreCompleto: participante.nombre_completo,
       correo: participante.correo,
+      ...(participante.congresoId
+        ? {
+            congresoId: participante.congresoId,
+            diaEventoIds: participante.diaEventoIds ?? [],
+          }
+        : {}),
     };
   }
 }

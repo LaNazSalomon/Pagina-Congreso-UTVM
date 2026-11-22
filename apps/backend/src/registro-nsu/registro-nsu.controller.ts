@@ -1,3 +1,4 @@
+import { AccesoPropio, Publico } from '../personal/acceso.decorator';
 import {
   BadRequestException,
   Body,
@@ -30,17 +31,20 @@ import {
 export class RegistroNsuController {
   constructor(private readonly registroNsuService: RegistroNsuService) {}
 
+  @Publico()
   @Get('verificar-correo/:token')
   verificarCorreo(@Param('token') token: string) {
     return this.registroNsuService.verificarCorreoParticipante(token);
   }
 
+  @Publico()
   @Post()
   @UseInterceptors(
     ArchivoConcurrencyInterceptor,
     FileInterceptor('comprobante', ARCHIVO_UPLOAD_OPTIONS),
   )
   create(
+    @Body('congresoId') congresoId: string,
     @Body('participantes') participantes: string | CreateParticipanteNsuDto[],
     @UploadedFile(crearPipeArchivo('comprobantes'))
     comprobante: UploadedFileType,
@@ -59,6 +63,7 @@ export class RegistroNsuController {
     }
 
     return this.registroNsuService.create({
+      congresoId,
       participantes: participantesParseados,
       comprobante,
     });
@@ -104,6 +109,7 @@ export class RegistroNsuController {
     return this.registroNsuService.enviarQrAcceso(id, participanteId, dto);
   }
 
+  @AccesoPropio({ tipo: 'NSU', idParam: 'participanteId' })
   @Post(':id/participantes/:participanteId/qr-acceso/enviar-automatico')
   enviarQrAccesoAutomatico(
     @Param('id', ParseUUIDPipe) id: string,

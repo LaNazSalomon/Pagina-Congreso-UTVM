@@ -38,6 +38,9 @@ export const NodemailerProvider: Provider = {
       host,
       port,
       secure,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 30000,
       auth: user && pass ? { user, pass } : undefined,
     });
   },

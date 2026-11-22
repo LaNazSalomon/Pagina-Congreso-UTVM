@@ -5,4 +5,6 @@ export interface ParticipanteResuelto {
   referenciaId: string;
   nombreCompleto: string;
   correo: string;
+  congresoId?: string;
+  diaEventoIds?: string[];
 }

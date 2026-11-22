@@ -16,3 +16,13 @@ apps/backend/uploads/
 
 agent.md
 instrucctions
+
+# Informes y respaldos locales de operaciones de la base de datos
+/apps/backend/scripts/seed-admin-report-*.json
+/apps/backend/scripts/registration-days-report-*.json
+/apps/backend/scripts/registration-calendar-repair-*.json
+/apps/backend/scripts/personal-reset-backup-*.json
+
+# Notas locales de continuidad
+CONTINUIDAD*.md
+continuidad*.md

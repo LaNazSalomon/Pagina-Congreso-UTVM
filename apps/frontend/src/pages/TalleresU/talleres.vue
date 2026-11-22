@@ -1,6 +1,6 @@
 <template>
   <q-page class="talleres-page">
-    <q-inner-loading :showing="isRefreshing">
+    <q-inner-loading :showing="cargandoPagina">
       <q-spinner size="50px" color="positive" />
     </q-inner-loading>
 
@@ -32,20 +32,20 @@
           icon="refresh"
           label="Refrescar"
           class="talleres-refresh"
-          :loading="isRefreshing"
-          :disable="isRefreshing"
+          :loading="cargandoPagina"
+          :disable="cargandoPagina"
           @click="cargarTalleres"
         />
       </div>
 
-      <div v-if="!isRefreshing && error" class="sin-talleres error">
+      <div v-if="!cargandoPagina && (error || errorCongreso)" class="sin-talleres error">
         <q-icon name="error_outline" size="50px" />
         <strong>No se pudieron cargar los talleres</strong>
-        <p>{{ error }}</p>
+        <p>{{ errorCongreso || error }}</p>
       </div>
 
       <div
-        v-else-if="!isRefreshing && talleres.length === 0"
+        v-else-if="!cargandoPagina && talleres.length === 0"
         class="sin-talleres"
       >
         <q-icon name="event_busy" size="50px" />
@@ -61,7 +61,7 @@
             class="taller-card"
             :class="[
               `estado-${obtenerEstado(taller).tipo}`,
-              { 'is-disabled': obtenerEstado(taller).tipo === 'gris' },
+              { 'is-disabled': obtenerEstado(taller).tipo === 'gris' }
             ]"
             @click="seleccionarTaller(taller)"
           >
@@ -290,7 +290,7 @@
                     <div
                       class="taller-progress-bar"
                       :style="{
-                        width: `${obtenerPorcentaje(tallerSeleccionado)}%`,
+                        width: `${obtenerPorcentaje(tallerSeleccionado)}%`
                       }"
                     ></div>
                   </div>
@@ -353,6 +353,8 @@ import { AxiosError } from "axios";
 
 import { useTalleresQuery } from "../../composables/useTalleresQuery";
 import { api } from "../../services/api";
+import { obtenerCongresoPublicoActual } from "../../services/congresoPublicoService";
+import { cargarSesionParticipante } from "../../services/participanteSessionService";
 
 interface TallerBackend {
   id: string;
@@ -437,6 +439,9 @@ type TipoParticipante = "EXTERNO" | "NSU";
 const $q = useQuasar();
 
 const { data, load, isRefreshing, error } = useTalleresQuery();
+const cargandoCongreso = ref(false);
+const errorCongreso = ref("");
+const cargandoPagina = computed(() => cargandoCongreso.value || isRefreshing.value);
 
 const tallerSeleccionado = ref<TallerVista | null>(null);
 
@@ -457,8 +462,8 @@ const talleres = computed<TallerVista[]>(() => {
         typeof taller.requisitos === "string"
           ? taller.requisitos
               .split("\n")
-              .map((requisito) => requisito.trim())
-              .filter((requisito) => requisito.length > 0)
+              .map(requisito => requisito.trim())
+              .filter(requisito => requisito.length > 0)
           : [];
 
       const nombrePonente = taller.ponente?.nombre || "Tallerista por asignar";
@@ -495,7 +500,7 @@ const talleres = computed<TallerVista[]>(() => {
 
         estado_cupo: taller.estado_cupo,
 
-        porcentaje_ocupacion: taller.porcentaje_ocupacion,
+        porcentaje_ocupacion: taller.porcentaje_ocupacion
       };
     })
     .sort((a, b) => {
@@ -512,7 +517,7 @@ const formatearHora = (hora?: string): string => {
 const obtenerHorario = (taller: TallerBackend): string => {
   if (taller.hora_inicio && taller.hora_fin) {
     return `${formatearHora(
-      taller.hora_inicio,
+      taller.hora_inicio
     )} - ${formatearHora(taller.hora_fin)}`;
   }
 
@@ -543,34 +548,34 @@ const obtenerEstado = (taller: TallerVista): EstadoTaller => {
   if (porcentaje >= 100) {
     return {
       tipo: "gris",
-      texto: "Cupo completo",
+      texto: "Cupo completo"
     };
   }
 
   if (porcentaje >= 80) {
     return {
       tipo: "rojo",
-      texto: "Pocos lugares",
+      texto: "Pocos lugares"
     };
   }
 
   if (porcentaje >= 50) {
     return {
       tipo: "amarillo",
-      texto: "Cupo medio",
+      texto: "Cupo medio"
     };
   }
 
   return {
     tipo: "verde",
-    texto: "Disponible",
+    texto: "Disponible"
   };
 };
 
 const seleccionarTaller = (taller: TallerVista): void => {
   tallerSeleccionado.value = {
     ...taller,
-    temas: [...taller.temas],
+    temas: [...taller.temas]
   };
 };
 
@@ -629,7 +634,7 @@ const inscribirse = async (taller: TallerVista): Promise<void> => {
     $q.notify({
       type: "warning",
       message: "Este taller ya no tiene lugares disponibles.",
-      position: "top",
+      position: "top"
     });
 
     return;
@@ -643,7 +648,7 @@ const inscribirse = async (taller: TallerVista): Promise<void> => {
     $q.notify({
       type: "warning",
       message: "Debes iniciar sesión para inscribirte a un taller.",
-      position: "top",
+      position: "top"
     });
 
     return;
@@ -656,10 +661,11 @@ const inscribirse = async (taller: TallerVista): Promise<void> => {
   inscribiendoTallerId.value = taller.id;
 
   try {
+    await cargarSesionParticipante();
     const response = await api.post("inscripcion-taller", {
       tallerId: taller.id,
       participanteId: participante.id,
-      tipoParticipante,
+      tipoParticipante
     });
 
     const mensaje =
@@ -668,19 +674,19 @@ const inscribirse = async (taller: TallerVista): Promise<void> => {
     $q.notify({
       type: "positive",
       message: mensaje,
-      position: "top",
+      position: "top"
     });
 
     await cargarTalleres();
 
     const tallerActualizado = talleres.value.find(
-      (item) => item.id === taller.id,
+      item => item.id === taller.id
     );
 
     if (tallerActualizado) {
       tallerSeleccionado.value = {
         ...tallerActualizado,
-        temas: [...tallerActualizado.temas],
+        temas: [...tallerActualizado.temas]
       };
     } else {
       cerrarDetalle();
@@ -691,7 +697,7 @@ const inscribirse = async (taller: TallerVista): Promise<void> => {
     $q.notify({
       type: "negative",
       message: obtenerMensajeError(error),
-      position: "top",
+      position: "top"
     });
   } finally {
     inscribiendoTallerId.value = null;
@@ -752,7 +758,7 @@ function formatearMes(fecha: string | Date): string {
   const day = Number(dayText);
 
   return new Intl.DateTimeFormat("es-MX", {
-    month: "short",
+    month: "short"
   }).format(new Date(year, month, day));
 }
 
@@ -770,7 +776,7 @@ function formatearFecha(fecha: string | Date): string {
     weekday: "long",
     day: "2-digit",
     month: "long",
-    year: "numeric",
+    year: "numeric"
   }).format(new Date(year, month, day));
 }
 
@@ -778,13 +784,13 @@ async function cargarPonentesConFoto(): Promise<void> {
   try {
     const response = await api.get<PonenteConFoto[]>("ponente", {
       params: {
-        _t: Date.now(),
-      },
+        _t: Date.now()
+      }
     });
 
     const mapa: Record<string, PonenteConFoto> = {};
 
-    response.data.forEach((ponente) => {
+    response.data.forEach(ponente => {
       mapa[ponente.id] = ponente;
     });
 
@@ -797,16 +803,26 @@ async function cargarPonentesConFoto(): Promise<void> {
 }
 
 const cargarTalleres = async (): Promise<void> => {
-  if (isRefreshing.value) {
+  if (cargandoPagina.value) {
     return;
   }
 
+  cargandoCongreso.value = true;
+  errorCongreso.value = "";
   try {
-    await Promise.all([load(), cargarPonentesConFoto()]);
+    const congresoId = await obtenerCongresoPublicoActual();
+    if (!congresoId) {
+      errorCongreso.value = "Aún no hay un congreso publicado.";
+      return;
+    }
+    await Promise.all([load(congresoId), cargarPonentesConFoto()]);
 
     console.log("Talleres cargados:", data.value);
   } catch (err) {
+    errorCongreso.value = "No pudimos consultar el congreso actual.";
     console.error("Error al cargar los talleres:", err);
+  } finally {
+    cargandoCongreso.value = false;
   }
 };
 

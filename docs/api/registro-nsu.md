@@ -5,6 +5,11 @@ El envio del QR se documenta en [`qr-acceso.md`](./qr-acceso.md). Endpoint:
 
 Base URL: `http://localhost:3000/api`
 
+El alta y la verificación de correo son públicas. Los listados, comprobantes y
+operaciones administrativas exigen Administrador. El envío automático de QR
+también admite al participante autenticado de ese registro. Consultar
+[sesiones y permisos](personal-roles.md).
+
 Los endpoints de registro usan `multipart/form-data` porque incluyen la subida de un comprobante de pago.
 
 ## Campos del DTO
@@ -18,7 +23,8 @@ Los endpoints de registro usan `multipart/form-data` porque incluyen la subida d
 | `institucion` | string | Si | Maximo 200 caracteres |
 | `carrera` | string | Si | Maximo 200 caracteres |
 | `telefono` | string | Si | Solo numeros, exactamente 10 digitos |
-| `dias` | string | Si | Maximo 100 caracteres |
+| `dias` | string | Si | Fechas ISO separadas por coma; el servidor las obtiene de los IDs |
+| `diaEventoIds` | UUID[] | Si | Fechas únicas que pertenecen al congreso seleccionado |
 | `montoNumero` | number | Si | Minimo 0 |
 
 ### CreateRegistroNsuDto
@@ -26,6 +32,7 @@ Los endpoints de registro usan `multipart/form-data` porque incluyen la subida d
 | Campo | Tipo | Requerido | Reglas |
 | --- | --- | --- | --- |
 | `participantes` | CreateParticipanteNsuDto[] | Si | Arreglo con minimo 1 participante |
+| `congresoId` | UUID | Si | Congreso de todos los participantes del grupo |
 | `comprobante` | file | Si | PDF, JPG, JPEG o PNG validos, max 5MB |
 
 ---
@@ -78,7 +85,8 @@ Ejemplo con curl:
 
 ```bash
 curl -X POST http://localhost:3000/api/registro-nsu \
-  -F 'participantes=[{"nombreCompleto":"Juan Perez","correo":"juan@nsu.edu.mx","institucion":"Universidad Nacional","carrera":"Ing. Sistemas","telefono":"8112345678","dias":"dia1,dia2","montoNumero":350}]' \
+  -F 'congresoId={{congreso_id}}' \
+  -F 'participantes=[{"nombreCompleto":"Juan Perez","correo":"juan@nsu.edu.mx","institucion":"Universidad Nacional","carrera":"Ing. Sistemas","telefono":"8112345678","dias":"2026-10-23,2026-10-24","diaEventoIds":["{{dia_evento_1_id}}","{{dia_evento_2_id}}"],"montoNumero":200}]' \
   -F "comprobante=@comprobante.pdf"
 ```
 
@@ -87,7 +95,7 @@ Respuesta esperada: `201 Created`.
 ```json
 {
   "id": "{{registro_id}}",
-  "total_general": 350,
+  "total_general": 200,
   "total_participantes": 1,
   "estado_pago": "PENDIENTE",
   "participantes": [
@@ -98,8 +106,8 @@ Respuesta esperada: `201 Created`.
       "institucion": "Universidad Nacional",
       "carrera": "Ing. Sistemas",
       "telefono": "8112345678",
-      "dias": "dia1,dia2",
-      "monto_individual": 350
+      "dias": "2026-10-23,2026-10-24",
+      "monto_individual": 200
     }
   ]
 }
@@ -109,6 +117,10 @@ Errores posibles:
 - `400 Bad Request` — campo `participantes` no es JSON valido.
 - `400 Bad Request` — archivo no adjuntado o formato no valido.
 - `400 Bad Request` — archivo invalido o supera 5MB.
+- `503 Service Unavailable` — el grupo quedó guardado pero falló uno o más
+  correos de verificación. Repetir el mismo grupo completo pendiente reenvía los
+  correos no verificados sin duplicar el registro ni el comprobante. El reintento
+  devuelve el ID del grupo original y un mensaje de reenvío.
 
 ---
 
@@ -126,7 +138,7 @@ Respuesta esperada: `200 OK`.
 [
   {
     "id": "{{registro_id}}",
-    "total_general": 350,
+    "total_general": 200,
     "total_participantes": 1,
     "estado_pago": "PENDIENTE",
     "participantes": [...]
@@ -149,7 +161,7 @@ Respuesta esperada: `200 OK`.
 ```json
 {
   "id": "{{registro_id}}",
-  "total_general": 350,
+  "total_general": 200,
   "total_participantes": 1,
   "estado_pago": "PENDIENTE",
   "participantes": [...]
@@ -181,7 +193,7 @@ Respuesta esperada: `200 OK`.
 ```json
 {
   "id": "{{registro_id}}",
-  "total_general": 350,
+  "total_general": 200,
   ...
 }
 ```
@@ -220,7 +232,7 @@ Respuesta esperada: `200 OK`.
 ```json
 {
   "id": "{{registro_id}}",
-  "total_general": 350,
+  "total_general": 200,
   ...
 }
 ```

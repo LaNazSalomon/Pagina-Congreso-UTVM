@@ -34,8 +34,9 @@ export class ConferenciasService {
     );
   }
 
-  findAllConferencias(): Promise<Conferencia[]> {
+  findAllConferencias(congresoId?: string): Promise<Conferencia[]> {
     return this.repository.find({
+      ...(congresoId ? { where: { congreso: { id: congresoId } } } : {}),
       relations: relacionesConferencia,
       select: seleccionConferencia,
     });

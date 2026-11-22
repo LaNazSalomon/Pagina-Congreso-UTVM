@@ -57,19 +57,23 @@ export function useConferenciasQuery() {
   const data = ref<Conferencia[]>([]);
   const isRefreshing = ref(false);
   const error = ref<string | null>(null);
+  let loadRequest = 0;
 
-  const load = async () => {
+  const load = async (congresoId?: string) => {
+    const request = ++loadRequest;
     isRefreshing.value = true;
     error.value = null;
 
     try {
-      const response = await api.get<ConferenciaApiResponse[]>("conferencias");
-      data.value = response.data.map(normalizeConferencia);
+      const response = await api.get<ConferenciaApiResponse[]>("conferencias", {
+        params: congresoId ? { congresoId } : undefined
+      });
+      if (request === loadRequest) data.value = response.data.map(normalizeConferencia);
     } catch (err) {
-      error.value = "Error cargando conferencias";
+      if (request === loadRequest) error.value = "Error cargando conferencias";
       console.error(err);
     } finally {
-      isRefreshing.value = false;
+      if (request === loadRequest) isRefreshing.value = false;
     }
   };
 

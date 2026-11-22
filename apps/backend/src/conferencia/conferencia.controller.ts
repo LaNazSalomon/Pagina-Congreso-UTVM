@@ -1,3 +1,4 @@
+import { Publico } from '../personal/acceso.decorator';
 import {
   Controller,
   Get,
@@ -7,12 +8,12 @@ import {
   Param,
   Delete,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { ConferenciasService } from './conferencia.service';
 import { CreateConferenciaDto } from './dto/create-conferencia.dto';
 import { UpdateConferenciaDto } from './dto/update-conferencia.dto';
 
-// TODO: Restringir las mutaciones al administrador autenticado.
 @Controller('conferencias')
 export class ConferenciasController {
   constructor(private readonly conferenciasService: ConferenciasService) {}
@@ -22,11 +23,13 @@ export class ConferenciasController {
     return this.conferenciasService.create(createConferenciaDto);
   }
 
+  @Publico()
   @Get()
-  findAllConferencias() {
-    return this.conferenciasService.findAllConferencias();
+  findAllConferencias(@Query('congresoId', new ParseUUIDPipe({ optional: true })) congresoId?: string) {
+    return this.conferenciasService.findAllConferencias(congresoId);
   }
 
+  @Publico()
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.conferenciasService.findOneConferencia(id);

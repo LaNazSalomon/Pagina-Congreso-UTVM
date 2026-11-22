@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -12,6 +13,13 @@ import {
 import { POSTGRES_NUMERIC_10_2_MAX } from '../../common/database/postgres-limits.constant';
 
 export class CreateExternoDto {
+  @IsUUID('4')
+  congresoId!: string;
+
+  @IsArray()
+  @IsUUID('4', { each: true })
+  diaEventoIds!: string[];
+
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)

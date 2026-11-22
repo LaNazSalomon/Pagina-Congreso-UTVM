@@ -30,6 +30,7 @@ export interface Reconocimiento {
   congreso?: ReconocimientoReferencia | null;
   hackaton?: ReconocimientoReferencia | null;
   hackaton_equipo?: ReconocimientoReferencia | null;
+  plantilla?: { id: string; version: number } | null;
 }
 
 export type HackatonResultado =
@@ -189,9 +190,35 @@ export interface Taller {
   requisitos: string;
   fecha_creacion: string;
   fecha_actualizacion?: string;
+
+  inscritos?: number;
+  porcentaje_ocupacion?: number;
+  estado_cupo?: string;
+
+  inscripciones?: Array<{
+    id: string;
+    created_at?: string;
+    updated_at?: string;
+    deleted_at?: string | null;
+  }>;
+
   congreso?: ConferenciaReferencia;
-  ponente?: ConferenciaReferencia;
-  ubicacion?: ConferenciaReferencia;
+
+  ponente?: ConferenciaReferencia & {
+    institucion?: string;
+    tema?: string;
+
+    foto?: {
+      id?: string;
+      url?: string;
+      ruta_archivo?: string;
+      path?: string;
+    } | null;
+  };
+
+  ubicacion?: ConferenciaReferencia & {
+    capacidad?: number;
+  };
 }
 
 export type TallerPayload = Omit<
@@ -202,8 +229,11 @@ export type TallerPayload = Omit<
   | "congreso"
   | "ponente"
   | "ubicacion"
+  | "inscritos"
+  | "porcentaje_ocupacion"
+  | "estado_cupo"
+  | "inscripciones"
 >;
-
 export interface Congreso {
   id: string;
   nombre: string;
@@ -283,6 +313,7 @@ export interface ArchivoMultimedia {
 
 export interface ParticipanteEms {
   id: number;
+  congresoId?: string | null;
   nombres: string;
   apellidoPaterno: string;
   apellidoMaterno?: string | null;
@@ -301,6 +332,7 @@ export type ParticipanteEmsPayload = Omit<
 
 export interface ParticipanteUtvm {
   id: number;
+  congresoId?: string | null;
   nombres: string;
   apellidoPaterno: string;
   apellidoMaterno?: string | null;
@@ -318,6 +350,8 @@ export type ParticipanteUtvmPayload = Omit<
 >;
 
 export interface ParticipanteNsuDetalle {
+  congresoId?: string | null;
+  diaEventoIds?: string[] | null;
   id: string;
   es_tutor: boolean;
   correo_verificado: boolean;
@@ -343,6 +377,9 @@ export interface RegistroNsu {
 }
 
 export interface ParticipanteExterno {
+  congresoId?: string | null;
+  diaEventoIds?: string[] | null;
+  congreso?: { id: string; nombre: string } | null;
   id: string;
   nombre: string;
   apellidoPaterno: string;

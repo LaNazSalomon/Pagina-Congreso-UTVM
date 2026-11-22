@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
 } from 'class-validator';
 
@@ -33,4 +34,8 @@ export class CreateEmsDto {
   @IsString()
   @Length(10, 15)
   telefono!: string;
+
+  @IsOptional()
+  @IsUUID()
+  congresoId?: string;
 }

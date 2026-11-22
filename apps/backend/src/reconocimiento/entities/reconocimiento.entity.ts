@@ -19,6 +19,7 @@ import { Hackaton } from '../../hackaton/entities/hackaton.entity';
 import { HackatonEquipo } from '../../hackaton/entities/hackaton-equipo.entity';
 import { ReconocimientoEstado } from '../enums/reconocimiento-estado.enum';
 import { ReconocimientoTipo } from '../enums/reconocimiento-tipo.enum';
+import { ReconocimientoPlantilla } from './reconocimiento-plantilla.entity';
 
 @Entity('reconocimiento')
 @Unique('uq_reconocimiento_clave_emision', ['clave_emision'])
@@ -84,6 +85,24 @@ export class Reconocimiento {
 
   @Column({ type: 'char', length: 64, nullable: true })
   ultimo_pdf_sha256?: string | null;
+
+  @ManyToOne(() => ReconocimientoPlantilla, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'plantilla_id' })
+  plantilla?: ReconocimientoPlantilla | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  render_context?: {
+    equipo?: string;
+    resultado?: string;
+    participacion?: string;
+  } | null;
+
+  // Columna heredada; las nuevas descargas nunca escriben aquí.
+  @Column({ type: 'bytea', nullable: true, select: false })
+  pdf_emitido?: Buffer | null;
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   created_at!: Date;

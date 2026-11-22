@@ -1,4 +1,5 @@
-import { IsEnum, IsUUID } from 'class-validator';
+import { IsEnum, IsUUID, IsString, Matches, MaxLength } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 import { ParticipanteTipo } from '../../participante-acceso/participante-tipo.enum';
 
@@ -8,9 +9,14 @@ export class CrearInscripcionTallerDto {
   })
   tallerId!: string;
 
-  @IsUUID('4', {
-    message: 'El identificador del participante no es válido.',
-  })
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'number' ? String(value) : value,
+  )
+  @IsString()
+  @MaxLength(64)
+  @Matches(
+    /^(?:[1-9]\d*|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i,
+  )
   participanteId!: string;
 
   @IsEnum(ParticipanteTipo, {

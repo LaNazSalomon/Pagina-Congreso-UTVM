@@ -1,0 +1,691 @@
+$light-bg: #f3f8f5;
+$light-surface: #ffffff;
+$light-soft: #edf6f0;
+$light-ink: #17372d;
+$light-muted: #4a6658;
+$light-accent: #087b51;
+$light-border: #d2e6d8;
+$light-shadow: 0 14px 34px rgba(22, 76, 47, 0.08);
+
+body.theme-light {
+  :is(
+    .news-page,
+    .panelistas-page,
+    .panelista-detail-page,
+    .agenda-page,
+    .conferencias-u-page,
+    .conference-detail-page,
+    .talleres-page,
+    .registro-externo-page,
+    .mi-qr-page,
+    .login-page
+  ) {
+    color: $light-ink;
+    background:
+      radial-gradient(circle at 80% 12%, rgba(11, 150, 91, 0.08), transparent 34%),
+      linear-gradient(135deg, #f9fcfa, $light-bg);
+  }
+
+  // Noticias: listado, carrusel y artículo.
+  .news-page {
+    --news-muted: #496757;
+    --news-accent: #087b51;
+    --news-border: #d2e6d8;
+  }
+
+  .news-page .news-card,
+  .news-page .news-carousel {
+    color: $light-ink;
+    background: $light-surface;
+    border-color: $light-border;
+    box-shadow: $light-shadow;
+  }
+
+  .news-page .news-state h1,
+  .news-page .news-state h2,
+  .news-page .news-article__body,
+  .news-page .news-carousel__position > span {
+    color: $light-ink;
+  }
+
+  .news-page .news-cover__fallback {
+    color: $light-accent;
+    background: #e4f2e9;
+  }
+
+  // Perfiles de ponentes y panelistas.
+  .panelistas-header h1,
+  .panelista-card h2,
+  .panelista-hero-info h1,
+  .panelista-content-card h2,
+  .panelista-info-grid strong,
+  .panelistas-state strong {
+    color: $light-ink;
+  }
+
+  .panelistas-header p,
+  .panelista-hero-info p,
+  .panelista-content-card p,
+  .panelista-semblanza,
+  .panelista-footer,
+  .panelista-info-grid span,
+  .panelistas-state span {
+    color: $light-muted;
+  }
+
+  .panelistas-kicker,
+  .panelista-tema,
+  .panelista-topic,
+  .panelista-back-btn,
+  .panelistas-refresh-btn,
+  .panelista-refresh-btn {
+    color: $light-accent !important;
+  }
+
+  .panelista-card,
+  .panelista-content-card,
+  .panelistas-state {
+    background: $light-surface;
+    border-color: $light-border;
+    box-shadow: $light-shadow;
+  }
+
+  .panelista-card:hover {
+    background: $light-surface;
+  }
+
+  .panelista-avatar span,
+  .panelista-hero-avatar span,
+  .panelista-detail-avatar span {
+    color: $light-ink;
+  }
+
+  .panelista-tipo.is-ponente,
+  .panelista-badge.is-ponente {
+    color: #225b99 !important;
+  }
+
+  .panelista-tipo.is-panelista,
+  .panelista-badge.is-panelista {
+    color: #a64a0d !important;
+  }
+
+  .panelista-tipo.is-invitado,
+  .panelista-badge.is-invitado {
+    color: $light-accent !important;
+    background: $light-soft !important;
+    border-color: $light-border;
+  }
+
+  // Agenda: controles, cuadrícula y vista de lista.
+  .agenda-card,
+  .agenda-empty,
+  .agenda-list-item {
+    color: $light-ink;
+    background: $light-surface;
+    border-color: $light-border;
+    box-shadow: $light-shadow;
+  }
+
+  .agenda-title h1,
+  .agenda-empty strong,
+  .agenda-hour-title,
+  .agenda-room strong,
+  .list-time strong,
+  .list-title-row strong,
+  .legend-title {
+    color: $light-ink;
+  }
+
+  .agenda-title p,
+  .agenda-empty,
+  .agenda-hour,
+  .agenda-room span,
+  .list-time span,
+  .list-meta,
+  .legend-item,
+  .agenda-note {
+    color: $light-muted;
+  }
+
+  .agenda-refresh-btn,
+  .agenda-switch-btn.is-active,
+  .agenda-day-btn.is-active {
+    color: $light-accent !important;
+  }
+
+  .agenda-day-btn,
+  .agenda-switch-btn {
+    color: $light-muted !important;
+    background: $light-surface !important;
+    border-color: $light-border;
+  }
+
+  .agenda-day-btn.is-active,
+  .agenda-switch-btn.is-active {
+    color: $light-accent !important;
+    background: #ddf3e5 !important;
+  }
+
+  .agenda-view-switch,
+  .agenda-legend,
+  .legend-item,
+  .agenda-table-wrapper,
+  .agenda-room {
+    background: $light-soft;
+    border-color: $light-border;
+  }
+
+  .agenda-time-header {
+    background: #e2f2e8;
+    border-color: $light-border;
+  }
+
+  .agenda-row,
+  .agenda-hour-title,
+  .agenda-hour,
+  .agenda-room,
+  .hour-lines span {
+    border-color: $light-border;
+  }
+
+  .agenda-event.event-conferencia {
+    color: #145b6a;
+    background: #dff4f7;
+  }
+
+  .agenda-event.event-taller {
+    color: #895211;
+    background: #fff2d8;
+  }
+
+  .agenda-event.event-sesion {
+    color: #6944a5;
+    background: #f0eafd;
+  }
+
+  .agenda-event.event-seguridad {
+    color: #a32f47;
+    background: #fdebef;
+  }
+
+  .agenda-event.event-networking {
+    color: $light-accent;
+    background: #e4f5e9;
+  }
+
+  // Conferencias y su vista de detalle.
+  .conferencias-u-page .header-copy h1,
+  .conference-detail-page .speaker-main-info h1,
+  .conferencia-u-content h2,
+  .conferencia-u-speaker strong,
+  .conference-detail-page .info-card strong,
+  .conference-detail-page .content-section h2,
+  .conference-detail-page .section-title-row h2,
+  .conference-detail-page .session-card h3,
+  .conferencias-u-empty strong,
+  .conference-detail-page .detail-state-card strong {
+    color: $light-ink;
+    text-shadow: none;
+  }
+
+  .conferencias-u-page .header-copy p,
+  .conference-detail-page .speaker-main-info p,
+  .conferencia-u-speaker small,
+  .speaker-label,
+  .conferencia-u-content p,
+  .conferencia-u-info span,
+  .conference-detail-page .info-card span,
+  .conference-detail-page .content-section p,
+  .conference-detail-page .session-card p,
+  .conference-detail-page .section-title-row span,
+  .conference-detail-page .detail-state-card span,
+  .conferencias-u-empty {
+    color: $light-muted;
+  }
+
+  .conferencias-u-page .header-kicker,
+  .conferencias-u-page .header-tag.featured,
+  .conferencias-u-refresh,
+  .conferencia-u-action,
+  .conference-detail-page .speaker-topic,
+  .conference-detail-page .session-track,
+  .conference-detail-page .detail-back-btn {
+    color: $light-accent !important;
+  }
+
+  .conferencias-u-page .header-tag,
+  .conferencia-u-badge,
+  .conference-detail-page .hero-tag,
+  .conference-detail-page .session-type {
+    color: $light-muted;
+    background: $light-soft;
+  }
+
+  .conferencias-u-page .header-tag.featured,
+  .conference-detail-page .hero-tag.featured {
+    color: $light-accent;
+  }
+
+  .conferencia-u-item,
+  .conferencias-u-empty,
+  .conference-detail-page .info-card,
+  .conference-detail-page .session-card,
+  .conference-detail-page .detail-state-card {
+    color: $light-ink;
+    background: $light-surface;
+    border-color: $light-border;
+    box-shadow: $light-shadow;
+  }
+
+  .conferencia-u-speaker,
+  .conferencia-u-date,
+  .conferencia-u-action,
+  .conference-detail-page .warning-card {
+    color: $light-ink;
+    background: $light-soft;
+    border-color: $light-border;
+  }
+
+  .conferencia-u-date span,
+  .conferencia-u-info .q-icon,
+  .conference-detail-page .ponente-info-card small,
+  .conference-detail-page .ponente-arrow {
+    color: $light-accent !important;
+  }
+
+  .conferencia-u-speaker .ponente-avatar,
+  .conference-detail-page .speaker-avatar,
+  .conference-detail-page .speaker-avatar span {
+    color: $light-ink;
+  }
+
+  .conferencia-u-item:hover .conferencia-u-content h2 {
+    color: $light-accent;
+  }
+
+  .conference-detail-page .detail-refresh-btn {
+    color: $light-accent !important;
+    background: $light-soft !important;
+    border-color: $light-border;
+  }
+
+  // Talleres, leyenda y detalle emergente.
+  .talleres-page .header-copy h1,
+  .taller-card-info h3,
+  .taller-speaker-info strong,
+  .talleres-legend h3,
+  .sin-talleres strong,
+  .taller-detalle-info h2,
+  .taller-detalle-section h3,
+  .taller-detalle .info-card strong {
+    color: $light-ink;
+    text-shadow: none;
+  }
+
+  .talleres-page .header-copy p,
+  .taller-speaker-info span,
+  .taller-speaker-info small,
+  .taller-meta-item,
+  .taller-progress-label,
+  .taller-progress-caption,
+  .talleres-legend .legend-item p,
+  .sin-talleres,
+  .taller-detalle-info p,
+  .taller-detalle-section p,
+  .taller-detalle-section li,
+  .taller-detalle .info-card span {
+    color: $light-muted;
+  }
+
+  .talleres-page .header-kicker,
+  .talleres-page .header-tag.featured,
+  .talleres-refresh,
+  .taller-status-pill,
+  .taller-card-action,
+  .taller-date span,
+  .taller-detalle .hero-tag.featured {
+    color: $light-accent !important;
+  }
+
+  .talleres-page .header-tag,
+  .taller-status-pill,
+  .taller-detalle .hero-tag {
+    background: $light-soft;
+    color: $light-muted;
+  }
+
+  .taller-card,
+  .taller-card.estado-verde,
+  .taller-card.estado-amarillo,
+  .taller-card.estado-rojo,
+  .taller-card.estado-gris,
+  .talleres-legend,
+  .sin-talleres,
+  .taller-detalle,
+  .taller-detalle .info-card,
+  .taller-detalle-right {
+    color: $light-ink;
+    background: $light-surface;
+    border-color: $light-border;
+    box-shadow: $light-shadow;
+  }
+
+  .taller-speaker,
+  .taller-meta,
+  .taller-date,
+  .taller-card-action,
+  .talleres-legend .legend-item {
+    color: $light-ink;
+    background: $light-soft;
+    border-color: $light-border;
+  }
+
+  .taller-speaker-avatar,
+  .taller-detalle-avatar {
+    color: $light-ink;
+  }
+
+  .taller-progress,
+  .taller-detalle .taller-progress {
+    background: #dce9df;
+    border-color: $light-border;
+  }
+
+  .taller-card.estado-amarillo .taller-status-pill,
+  .taller-card.estado-amarillo .taller-card-action,
+  .taller-card.estado-amarillo .taller-card-info h3 {
+    color: #946315 !important;
+  }
+
+  .taller-card.estado-rojo .taller-status-pill,
+  .taller-card.estado-rojo .taller-card-action,
+  .taller-card.estado-rojo .taller-card-info h3 {
+    color: #a33239 !important;
+  }
+
+  .taller-card.estado-gris .taller-status-pill,
+  .taller-card.estado-gris .taller-card-action {
+    color: #52636a !important;
+  }
+
+  .taller-detalle-close {
+    color: $light-ink !important;
+    background: $light-soft !important;
+    border-color: $light-border;
+  }
+
+  .taller-detalle.estado-verde,
+  .taller-detalle.estado-amarillo,
+  .taller-detalle.estado-rojo,
+  .taller-detalle.estado-gris {
+    background: $light-surface !important;
+    border-color: $light-border;
+    box-shadow: $light-shadow;
+  }
+
+  .taller-detalle-avatar {
+    background: $light-soft;
+  }
+
+  .taller-detalle.estado-verde .taller-detalle-avatar,
+  .taller-detalle.estado-verde .info-card .q-icon {
+    color: $light-accent;
+  }
+
+  .taller-detalle.estado-amarillo .taller-detalle-avatar,
+  .taller-detalle.estado-amarillo .info-card .q-icon {
+    color: #895211;
+  }
+
+  .taller-detalle.estado-rojo .taller-detalle-avatar,
+  .taller-detalle.estado-rojo .info-card .q-icon {
+    color: #a33239;
+  }
+
+  .taller-detalle.estado-gris .taller-detalle-avatar,
+  .taller-detalle.estado-gris .info-card .q-icon {
+    color: #52636a;
+  }
+
+  .taller-detalle .taller-progress-label {
+    color: $light-muted;
+  }
+
+  .taller-detalle.estado-amarillo .hero-tag.featured,
+  .taller-detalle.estado-amarillo .btn-taller-inscribirse {
+    color: #895211 !important;
+    background: #fff2d8 !important;
+  }
+
+  .taller-detalle.estado-rojo .hero-tag.featured,
+  .taller-detalle.estado-rojo .btn-taller-inscribirse {
+    color: #a33239 !important;
+    background: #fdebef !important;
+  }
+
+  .taller-detalle.estado-gris .hero-tag.featured,
+  .taller-detalle.estado-gris .btn-taller-inscribirse {
+    color: #52636a !important;
+    background: #edf1f2 !important;
+  }
+
+  .taller-detalle-section,
+  .taller-detalle-left {
+    border-color: $light-border;
+  }
+
+  // Registro externo: campos, días, comprobante y diálogos.
+  .registro-externo-header h1,
+  .registro-externo-card .section-title,
+  .registro-externo-card .box-label,
+  .registro-externo-card .externo-days-grid .q-checkbox__label,
+  .registro-externo-card .externo-upload-text strong {
+    color: $light-ink;
+  }
+
+  .registro-externo-header p,
+  .registro-externo-card .box-help,
+  .registro-externo-card .externo-upload-text span {
+    color: $light-muted;
+  }
+
+  .registro-externo-card,
+  .registro-externo-card .externo-dark-box,
+  .registro-externo-card .externo-upload-box {
+    background: $light-surface;
+    border-color: $light-border;
+    box-shadow: $light-shadow;
+  }
+
+  .registro-externo-card .externo-light-input,
+  .registro-externo-card .externo-file-input,
+  .registro-externo-card .externo-days-grid .q-checkbox {
+    background: $light-soft;
+    border-color: $light-border;
+  }
+
+  .registro-externo-card .externo-light-input .q-field__label,
+  .registro-externo-card .externo-light-input .q-field__native,
+  .registro-externo-card .externo-light-input .q-field__input,
+  .registro-externo-card .externo-light-input.q-field--focused .q-field__native,
+  .registro-externo-card .externo-light-input.q-field--focused .q-field__input {
+    color: $light-ink !important;
+  }
+
+  .registro-externo-card .externo-light-input .q-field__native::placeholder,
+  .registro-externo-card .externo-light-input .q-field__input::placeholder {
+    color: #678174 !important;
+  }
+
+  .registro-externo-card .externo-light-input.q-field--focused .q-field__label,
+  .registro-externo-card .amount,
+  .registro-externo-card .correo-verificado-box,
+  .registro-externo-card .externo-upload-left .q-icon,
+  .registro-externo-card .externo-btn-outline {
+    color: $light-accent !important;
+  }
+
+  .registro-externo-card .externo-light-input .q-field__control::before {
+    border-color: $light-border !important;
+  }
+
+  .registro-externo-card .externo-file-input:hover,
+  .registro-externo-card .externo-file-input.is-dragging,
+  .registro-externo-card .externo-file-input.has-file {
+    background: #e2f3e8;
+  }
+
+  .registro-externo-card .btn-registro {
+    color: #073a25 !important;
+  }
+
+  .resumen-externo-card,
+  .resumen-externo-card .dialog-header,
+  .resumen-externo-card .q-card__actions {
+    background: $light-surface !important;
+    border-color: $light-border;
+    color: $light-ink !important;
+  }
+
+  .resumen-externo-card .q-card__section,
+  .resumen-externo-card .q-item,
+  .resumen-externo-card .externo-chip,
+  .resumen-externo-card .dialog-email {
+    color: $light-ink !important;
+  }
+
+  .resumen-externo-card .text-grey-7,
+  .resumen-externo-card .text-caption,
+  .resumen-externo-card .dialog-btn-flat {
+    color: $light-muted !important;
+  }
+
+  .resumen-externo-card .dialog-total {
+    color: $light-accent;
+  }
+
+  // Mi QR, antes y después de iniciar sesión.
+  .mi-qr-card,
+  .mi-qr-state,
+  .participant-card,
+  .qr-message-card {
+    color: $light-ink;
+    background: $light-surface;
+    border-color: $light-border;
+    box-shadow: $light-shadow;
+  }
+
+  .mi-qr-state,
+  .participant-card,
+  .qr-message-card {
+    background: $light-soft;
+  }
+
+  .mi-qr-hero h1,
+  .mi-qr-state h2,
+  .participant-info h2,
+  .qr-message-card h3 {
+    color: $light-ink;
+  }
+
+  .mi-qr-hero p,
+  .mi-qr-state p,
+  .participant-info p,
+  .qr-message-card p,
+  .logout-action {
+    color: $light-muted;
+  }
+
+  .mi-qr-kicker,
+  .participant-tags span,
+  .qr-message-card strong {
+    color: $light-accent;
+  }
+
+  // Acceso del participante y verificación de código.
+  .login-page .login-card,
+  .codigo-card {
+    color: $light-ink;
+    background: $light-surface;
+    border-color: $light-border;
+    box-shadow: $light-shadow;
+  }
+
+  .login-page .login-header h1,
+  .login-page .input-label,
+  .codigo-card .text-h5,
+  .codigo-card .text-weight-bold {
+    color: $light-ink;
+  }
+
+  .login-page .login-header p,
+  .login-page .back-button,
+  .codigo-card .text-grey-7,
+  .codigo-card .text-body1,
+  .codigo-card .text-body2 {
+    color: $light-muted;
+  }
+
+  .codigo-card .text-body1,
+  .codigo-card .text-body2 {
+    color: $light-muted !important;
+  }
+
+  .login-page .email-input.q-field--outlined .q-field__control,
+  .login-page .email-input.q-field--outlined.q-field--focused .q-field__control,
+  .login-page .email-input.q-field--outlined.q-field--error .q-field__control {
+    color: $light-ink;
+    background: $light-soft !important;
+    background-color: $light-soft !important;
+  }
+
+  .login-page .email-input.q-field--outlined .q-field__native,
+  .login-page .email-input.q-field--outlined .q-field__input {
+    color: $light-ink !important;
+  }
+
+  .login-page .email-input.q-field--outlined .q-field__native::placeholder,
+  .login-page .email-input.q-field--outlined .q-field__input::placeholder {
+    color: #678174 !important;
+  }
+
+  .codigo-input.q-field--outlined .q-field__control {
+    color: $light-ink;
+    background: $light-soft !important;
+  }
+
+  .codigo-input.q-field--outlined .q-field__native,
+  .codigo-input.q-field--outlined .q-field__input {
+    color: $light-ink !important;
+  }
+
+  .codigo-input.q-field--outlined .q-field__native::placeholder,
+  .codigo-input.q-field--outlined .q-field__input::placeholder {
+    color: #678174 !important;
+  }
+
+  // Centro de ayuda abierto desde el menú.
+  .centro-ayuda-card {
+    color: $light-ink;
+    background: $light-surface !important;
+    border-color: $light-border;
+    box-shadow: $light-shadow;
+  }
+
+  .centro-ayuda-encabezado,
+  .respuesta-bloque,
+  .tarjeta-categoria,
+  .boton-pregunta {
+    background: $light-soft;
+    border-color: $light-border;
+    color: $light-ink;
+  }
+
+  .centro-ayuda-card .titulo-vista,
+  .centro-ayuda-card .titulo-respuesta,
+  .centro-ayuda-card .boton-inicio,
+  .centro-ayuda-card .boton-cerrar {
+    color: $light-ink;
+  }
+}

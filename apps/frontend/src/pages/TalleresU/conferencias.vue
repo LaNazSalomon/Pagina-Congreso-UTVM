@@ -148,11 +148,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { useConferenciasQuery } from '@/composables/useConferenciasQuery';
 import { usePanelesQuery } from '@/composables/usePanelesQuery';
+import { obtenerCongresoPublicoActual } from '@/services/congresoPublicoService';
 import type { Conferencia, Ponente } from '@/types';
 
 interface ConferenciaPublica extends Conferencia {
@@ -187,6 +188,8 @@ interface ConferenciaPublica extends Conferencia {
 }
 
 const router = useRouter();
+const cargandoCongreso = ref(false);
+const errorCongreso = ref('');
 
 const {
   data: conferencias,
@@ -203,11 +206,11 @@ const {
 } = usePanelesQuery();
 
 const isRefreshing = computed(() => {
-  return cargandoConferencias.value || cargandoPonentes.value;
+  return cargandoCongreso.value || cargandoConferencias.value || cargandoPonentes.value;
 });
 
 const errorGeneral = computed(() => {
-  return errorConferencias.value || errorPonentes.value;
+  return errorCongreso.value || errorConferencias.value || errorPonentes.value;
 });
 
 const conferenciasOrdenadas = computed<ConferenciaPublica[]>(() => {
@@ -227,10 +230,21 @@ onMounted(() => {
 });
 
 async function refrescar() {
-  await Promise.all([
-    cargarConferencias(),
-    cargarPonentes(),
-  ]);
+  if (isRefreshing.value) return;
+  cargandoCongreso.value = true;
+  errorCongreso.value = '';
+  try {
+    const congresoId = await obtenerCongresoPublicoActual();
+    if (!congresoId) {
+      errorCongreso.value = 'Aún no hay un congreso publicado.';
+      return;
+    }
+    await Promise.all([cargarConferencias(congresoId), cargarPonentes()]);
+  } catch {
+    errorCongreso.value = 'No pudimos consultar el congreso actual.';
+  } finally {
+    cargandoCongreso.value = false;
+  }
 }
 
 function abrirDetalleConferencia(id: string) {

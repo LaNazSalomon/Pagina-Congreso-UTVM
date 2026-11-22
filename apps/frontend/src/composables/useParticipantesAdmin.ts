@@ -13,6 +13,8 @@ import type {
 type NsuEstadoPago = RegistroNsu['estado_pago'];
 type ExternoStatus = ParticipanteExterno['status'];
 
+export const pagosAdminRevision = ref(0);
+
 export function useParticipantesAdmin() {
   const ems = ref<ParticipanteEms[]>([]);
   const utvm = ref<ParticipanteUtvm[]>([]);
@@ -75,6 +77,7 @@ export function useParticipantesAdmin() {
 
   const updateNsuStatus = async (id: string, estado_pago: NsuEstadoPago) => {
     const response = await api.patch(`registro-nsu/${id}`, { estado_pago });
+    pagosAdminRevision.value++;
     return response.data as RegistroNsu;
   };
   const getNsuById = async (id: string) => {
@@ -85,6 +88,7 @@ export function useParticipantesAdmin() {
 
   const removeNsu = async (id: string) => {
     await api.delete(`registro-nsu/${id}`);
+    pagosAdminRevision.value++;
   };
 
   const updateNsuParticipantStatus = async (
@@ -96,6 +100,7 @@ export function useParticipantesAdmin() {
       `registro-nsu/${registroId}/participantes/${participanteId}`,
       { estado_pago },
     );
+    pagosAdminRevision.value++;
     return response.data as RegistroNsu;
   };
 
@@ -103,11 +108,13 @@ export function useParticipantesAdmin() {
     const response = await api.delete(
       `registro-nsu/${registroId}/participantes/${participanteId}`,
     );
+    pagosAdminRevision.value++;
     return response.data as RegistroNsu;
   };
 
   const updateExterno = async (id: string, payload: Partial<ParticipanteExternoPayload>) => {
     const response = await api.patch(`externos/${id}`, payload);
+    pagosAdminRevision.value++;
     return response.data as ParticipanteExterno;
   };
 
@@ -117,6 +124,7 @@ export function useParticipantesAdmin() {
 
   const removeExterno = async (id: string) => {
     await api.delete(`externos/${id}`);
+    pagosAdminRevision.value++;
   };
 
   return {

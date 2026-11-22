@@ -13,7 +13,7 @@
           :dark="!isLight"
           label="Congreso"
           :rules="[required]"
-          :disable="loading"
+          :disable="loading || congresos.length === 1"
         />
       </div>
       <div class="col-12 col-md-6">
@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from "vue";
+import { onMounted, watch } from "vue";
 import { useFormPersistence } from "../../composables/useFormPersistence";
 import { useThemeMode } from "../../composables/useThemeMode";
 import type { Congreso, HackatonPayload } from "../../types";
@@ -112,6 +112,13 @@ watch(
   },
   { deep: true }
 );
+
+watch(() => props.congresos[0]?.id, id => {
+  if (props.persistDraft) form.value.congreso_id = id ?? "";
+});
+onMounted(() => {
+  if (props.persistDraft) form.value.congreso_id = props.congresos[0]?.id ?? "";
+});
 
 const required = (value: string) =>
   !!value?.trim() || "Este campo es obligatorio";

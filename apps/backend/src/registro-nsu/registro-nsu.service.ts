@@ -3,6 +3,8 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  Logger,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
@@ -19,9 +21,12 @@ import { ParticipanteQrEnvioService } from '../participante-qr/participante-qr-e
 import { ParticipanteTipo } from '../participante-acceso/participante-tipo.enum';
 import { ComprobanteService } from '../comprobante/comprobante.service';
 import type { ArchivoComprobante } from '../comprobante/entities/archivo-comprobante.entity';
+import { DiaEventoService } from '../dia-evento/dia-evento.service';
+import { calcularTotalRegistro } from '../dia-evento/registro-tarifas.constant';
 
 @Injectable()
 export class RegistroNsuService {
+  private readonly logger = new Logger(RegistroNsuService.name);
   private readonly registroActionLocks = new Map<string, Promise<void>>();
   constructor(
     @Inject('REGISTRO_NSU_REPOSITORY')
@@ -35,6 +40,7 @@ export class RegistroNsuService {
     private readonly qrEnvio: ParticipanteQrEnvioService,
     private readonly dataSource: DataSource,
     private readonly comprobantes: ComprobanteService,
+    private readonly diasEvento: DiaEventoService,
   ) {}
 
   async create(createRegistroNsuDto: CreateRegistroNsuDto) {
@@ -63,12 +69,29 @@ export class RegistroNsuService {
         correo: In(correos),
         deleted_at: IsNull(),
       },
-      select: {
-        correo: true,
-      },
+      relations: { registro: true },
     });
 
     if (participantesExistentes.length > 0) {
+      const registroOriginal = participantesExistentes[0].registro;
+      const mismoGrupoPendiente =
+        participantesExistentes.length === correos.length &&
+        registroOriginal?.total_participantes === correos.length &&
+        registroOriginal.estado_pago === 'PENDIENTE' &&
+        participantesExistentes.every(
+          (p) =>
+            p.registro.id === registroOriginal.id &&
+            p.estado_pago === 'PENDIENTE',
+        ) &&
+        participantesExistentes.some((p) => !p.correo_verificado);
+      if (mismoGrupoPendiente) {
+        await this.enviarVerificaciones(participantesExistentes);
+        return {
+          id: registroOriginal.id,
+          mensaje:
+            'Se reenviaron los enlaces de verificación pendientes. El registro original se conserva.',
+        };
+      }
       const correosDuplicados = [
         ...new Set(
           participantesExistentes.map((participante) =>
@@ -82,6 +105,18 @@ export class RegistroNsuService {
       );
     }
 
+    const selecciones = await Promise.all(
+      participantesDto.map((participante) =>
+        this.diasEvento.validarSeleccion(
+          createRegistroNsuDto.congresoId,
+          participante.diaEventoIds,
+        ),
+      ),
+    );
+    const tarifaNsu = await this.diasEvento.tarifa(
+      createRegistroNsuDto.congresoId,
+      'NSU',
+    );
     participantesDto.forEach((participante, index) => {
       const numeroParticipante = index + 1;
 
@@ -127,12 +162,10 @@ export class RegistroNsuService {
         );
       }
 
-      const diasCantidad = participante.dias
-        .split(',')
-        .map((dia) => dia.trim())
-        .filter(Boolean).length;
-
-      const montoEsperado = diasCantidad * 100;
+      const montoEsperado = calcularTotalRegistro(
+        selecciones[index].diaEventoIds.length,
+        tarifaNsu,
+      );
 
       if (Number(participante.montoNumero) !== montoEsperado) {
         throw new BadRequestException(
@@ -141,9 +174,12 @@ export class RegistroNsuService {
       }
     });
 
-    const totalGeneral = participantesDto.reduce((total, participante) => {
-      return total + Number(participante.montoNumero || 0);
-    }, 0);
+    const totalGeneral =
+      participantesDto.reduce((centavos, participante) => {
+        return (
+          centavos + Math.round(Number(participante.montoNumero || 0) * 100)
+        );
+      }, 0) / 100;
 
     let archivoGuardado: ArchivoComprobante | undefined;
     let registroGuardado!: RegistroNsu;
@@ -180,7 +216,9 @@ export class RegistroNsuService {
               institucion: participante.institucion.trim(),
               carrera: participante.carrera.trim(),
               telefono: participante.telefono.trim(),
-              dias: participante.dias,
+              congresoId: selecciones[index].congresoId,
+              diaEventoIds: selecciones[index].diaEventoIds,
+              dias: selecciones[index].fechas.join(','),
               monto_individual: participante.montoNumero,
               estado_pago: 'PENDIENTE',
             }),
@@ -194,19 +232,37 @@ export class RegistroNsuService {
       throw error;
     }
 
-    for (const participante of participantesGuardados) {
+    await this.enviarVerificaciones(participantesGuardados);
+
+    return this.findOne(registroGuardado.id);
+  }
+
+  private async enviarVerificaciones(participantes: ParticipanteNsu[]) {
+    let fallidos = 0;
+    for (const participante of participantes) {
+      if (participante.correo_verificado) continue;
       const verificationToken = this.crearTokenVerificacionParticipante(
         participante.id,
         participante.correo,
       );
 
-      await this.enviarCorreoVerificacionParticipante(
-        participante.correo,
-        verificationToken,
+      try {
+        await this.enviarCorreoVerificacionParticipante(
+          participante.correo,
+          verificationToken,
+        );
+      } catch {
+        fallidos += 1;
+      }
+    }
+    if (fallidos) {
+      this.logger.error(
+        `No se pudieron enviar ${fallidos} correos de verificación NSU.`,
+      );
+      throw new ServiceUnavailableException(
+        'Tu registro NSU quedó guardado, pero no pudimos enviar todos los correos de verificación. Reintenta con el mismo grupo de correos para reenviar los pendientes sin duplicar el registro.',
       );
     }
-
-    return this.findOne(registroGuardado.id);
   }
 
   async verificarCorreoParticipante(token: string) {
@@ -330,14 +386,15 @@ export class RegistroNsuService {
     )}`;
 
     if (!mailHost || !mailUser || !mailPass) {
-      console.warn('Correo no configurado. Enlace de verificación:', enlace);
-      return;
+      throw new Error('Configuración SMTP incompleta.');
     }
 
     const transporter = nodemailer.createTransport({
       host: mailHost,
       port: mailPort,
-      secure: mailPort === 465,
+      secure: this.configService.get<string>('MAIL_SECURE')
+        ? this.configService.get<string>('MAIL_SECURE') === 'true'
+        : mailPort === 465,
       auth: {
         user: mailUser,
         pass: mailPass,
@@ -502,11 +559,11 @@ export class RegistroNsuService {
         registro: { id: registroId },
         deleted_at: IsNull(),
       },
-      select: { id: true },
     });
     if (!participante) {
       throw new BadRequestException('Participante NSU no encontrado');
     }
+    this.qrEnvio.validarSeleccionRegistrada(dto, participante);
     return this.qrEnvio.enviar(ParticipanteTipo.NSU, participanteId, dto);
   }
 
@@ -525,6 +582,7 @@ export class RegistroNsuService {
       ParticipanteTipo.NSU,
       participanteId,
       participante.dias,
+      { ...participante, creadoEn: participante.created_at },
     );
   }
 

@@ -20,7 +20,7 @@
     </div>
 
     <ForosEmpresarialesList
-      :items="data"
+      :items="visibleForums"
       :is-refreshing="isRefreshing"
       :error="error"
       :deleting-id="deletingId"
@@ -30,14 +30,19 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useQuasar } from "quasar";
 import ForosEmpresarialesList from "../../components/list/ForosEmpresarialesList.vue";
 import { useForosEmpresarialesQuery } from "../../composables/useForosEmpresarialesQuery";
+import { useAdminCongreso } from "../../composables/useAdminCongreso";
 
 const $q = useQuasar();
 const { data, isRefreshing, error, load, remove } =
   useForosEmpresarialesQuery();
+const { selectedCongressId } = useAdminCongreso();
+const visibleForums = computed(() => data.value.filter(item =>
+  item.congreso?.id === selectedCongressId.value
+));
 const deletingId = ref<string | null>(null);
 
 const confirmRemove = (id: string) => {
@@ -56,7 +61,7 @@ const confirmRemove = (id: string) => {
         type: "positive",
         message: "Foro empresarial eliminado correctamente."
       });
-      await load();
+      if (selectedCongressId.value) await load(selectedCongressId.value);
     } catch (removeError) {
       console.error(removeError);
       $q.notify({
@@ -69,5 +74,6 @@ const confirmRemove = (id: string) => {
   });
 };
 
-onMounted(() => void load());
+onMounted(() => { if (selectedCongressId.value) void load(selectedCongressId.value); });
+watch(selectedCongressId, id => { if (id) void load(id); });
 </script>

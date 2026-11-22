@@ -2,7 +2,9 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 
 import { ConfigService } from '@nestjs/config';
@@ -10,10 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository, IsNull, Not } from 'typeorm';
 import * as nodemailer from 'nodemailer';
 
-import {
-  createHmac,
-  timingSafeEqual,
-} from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 import { Externo } from './entities/externo.entity';
 import { CreateExternoDto } from './dto/create-externo.dto';
@@ -24,9 +23,13 @@ import { ParticipanteQrEnvioService } from '../participante-qr/participante-qr-e
 import { ParticipanteTipo } from '../participante-acceso/participante-tipo.enum';
 import { ComprobanteService } from '../comprobante/comprobante.service';
 import type { ArchivoComprobante } from '../comprobante/entities/archivo-comprobante.entity';
+import { DiaEventoService } from '../dia-evento/dia-evento.service';
+import { calcularTotalRegistro } from '../dia-evento/registro-tarifas.constant';
 
 @Injectable()
 export class ExternosService {
+  private readonly logger = new Logger(ExternosService.name);
+
   constructor(
     @InjectRepository(Externo)
     private readonly externoRepository: Repository<Externo>,
@@ -36,14 +39,14 @@ export class ExternosService {
     private readonly qrEnvio: ParticipanteQrEnvioService,
     private readonly dataSource: DataSource,
     private readonly comprobantes: ComprobanteService,
+    private readonly diasEvento: DiaEventoService,
   ) {}
 
   async create(
     createExternoDto: CreateExternoDto,
     comprobante: Express.Multer.File,
   ) {
-    const correoNormalizado =
-      createExternoDto.correo.trim().toLowerCase();
+    const correoNormalizado = createExternoDto.correo.trim().toLowerCase();
 
     const correoExistente = await this.externoRepository.findOne({
       where: {
@@ -53,11 +56,30 @@ export class ExternosService {
     });
 
     if (correoExistente) {
+      if (
+        !correoExistente.correoVerificado &&
+        correoExistente.status === 'pendiente_verificacion'
+      ) {
+        return this.enviarVerificacionRegistro(correoExistente);
+      }
+
       throw new ConflictException(
         'Este correo ya fue registrado anteriormente. Revisa tu correo electrónico o usa uno diferente.',
       );
     }
 
+    const seleccion = await this.diasEvento.validarSeleccion(
+      createExternoDto.congresoId,
+      createExternoDto.diaEventoIds,
+    );
+    const totalEsperado = calcularTotalRegistro(
+      seleccion.diaEventoIds.length,
+      await this.diasEvento.tarifa(seleccion.congresoId, 'EXTERNO'),
+    );
+    if (Number(createExternoDto.total) !== totalEsperado)
+      throw new BadRequestException(
+        'El precio cambió o el total no coincide con los días seleccionados. Revisa el nuevo importe antes de registrarte.',
+      );
     let archivoGuardado: ArchivoComprobante | undefined;
     let externoGuardado!: Externo;
 
@@ -72,6 +94,10 @@ export class ExternosService {
         externoGuardado = await externoRepository.save(
           externoRepository.create({
             ...createExternoDto,
+            congresoId: seleccion.congresoId,
+            diaEventoIds: seleccion.diaEventoIds,
+            dias: seleccion.fechas,
+            total: totalEsperado,
             correo: correoNormalizado,
             institucion: createExternoDto.institucion || null,
             apellidoMaterno: createExternoDto.apellidoMaterno || null,
@@ -88,22 +114,33 @@ export class ExternosService {
       throw error;
     }
 
-    const verificationToken = this.crearTokenVerificacion(
-      externoGuardado.id,
-      externoGuardado.correo,
-    );
+    return this.enviarVerificacionRegistro(externoGuardado);
+  }
 
-    await this.enviarCorreoVerificacion(
-      externoGuardado.correo,
-      verificationToken,
-    );
+  private async enviarVerificacionRegistro(externo: Externo) {
+    try {
+      const verificationToken = this.crearTokenVerificacion(
+        externo.id,
+        externo.correo,
+      );
+
+      await this.enviarCorreoVerificacion(externo.correo, verificationToken);
+    } catch (error) {
+      this.logger.error(
+        'No se pudo enviar el correo de verificación de externos',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new ServiceUnavailableException(
+        'Tu registro quedó guardado, pero no pudimos enviar el correo de verificación. Intenta registrar de nuevo con el mismo correo para reenviar el enlace sin duplicar tu registro.',
+      );
+    }
 
     return {
       mensaje:
         'Registro recibido. Revisa tu correo electrónico para verificarlo y finalizar el proceso.',
-      id: externoGuardado.id,
-      status: externoGuardado.status,
-      correoVerificado: externoGuardado.correoVerificado,
+      id: externo.id,
+      status: externo.status,
+      correoVerificado: externo.correoVerificado,
     };
   }
 
@@ -147,6 +184,7 @@ export class ExternosService {
       },
       relations: {
         comprobante: true,
+        congreso: true,
       },
       order: {
         createdAt: 'DESC',
@@ -159,6 +197,7 @@ export class ExternosService {
       where: { id, deleted_at: IsNull() },
       relations: {
         comprobante: true,
+        congreso: true,
       },
     });
 
@@ -169,16 +208,42 @@ export class ExternosService {
     return externo;
   }
 
-  async update(
-    id: string,
-    updateExternoDto: UpdateExternoDto,
-  ) {
+  async update(id: string, updateExternoDto: UpdateExternoDto) {
     const externo = await this.findOne(id);
 
     if (
-      updateExternoDto.status === 'validado' &&
-      !externo.correoVerificado
+      updateExternoDto.dias !== undefined ||
+      updateExternoDto.diaEventoIds !== undefined ||
+      updateExternoDto.congresoId !== undefined
     ) {
+      const seleccion = await this.diasEvento.validarSeleccion(
+        updateExternoDto.congresoId ?? externo.congresoId!,
+        updateExternoDto.diaEventoIds ?? externo.diaEventoIds!,
+      );
+      const cambioDias =
+        externo.congresoId !== seleccion.congresoId ||
+        externo.diaEventoIds?.length !== seleccion.diaEventoIds.length ||
+        seleccion.diaEventoIds.some(
+          (id) => !externo.diaEventoIds?.includes(id),
+        );
+      updateExternoDto = {
+        ...updateExternoDto,
+        congresoId: seleccion.congresoId,
+        diaEventoIds: seleccion.diaEventoIds,
+        dias: seleccion.fechas,
+        total: cambioDias
+          ? calcularTotalRegistro(
+              seleccion.diaEventoIds.length,
+              externo.congresoId === seleccion.congresoId &&
+                externo.diaEventoIds?.length
+                ? Number(externo.total) / externo.diaEventoIds.length
+                : await this.diasEvento.tarifa(seleccion.congresoId, 'EXTERNO'),
+            )
+          : externo.total,
+      };
+    }
+
+    if (updateExternoDto.status === 'validado' && !externo.correoVerificado) {
       throw new BadRequestException(
         'No se puede validar un registro con correo pendiente de verificacion',
       );
@@ -236,7 +301,9 @@ export class ExternosService {
     return this.externoRepository.save(externo);
   }
 
-  enviarQrAcceso(id: string, dto: EnviarQrAccesoDto) {
+  async enviarQrAcceso(id: string, dto: EnviarQrAccesoDto) {
+    const participante = await this.findOne(id);
+    this.qrEnvio.validarSeleccionRegistrada(dto, participante);
     return this.qrEnvio.enviar(ParticipanteTipo.EXTERNO, id, dto);
   }
 
@@ -246,13 +313,11 @@ export class ExternosService {
       ParticipanteTipo.EXTERNO,
       id,
       participante.dias,
+      { ...participante, creadoEn: participante.createdAt },
     );
   }
 
-  private crearTokenVerificacion(
-    externoId: string,
-    correo: string,
-  ) {
+  private crearTokenVerificacion(externoId: string, correo: string) {
     const secret =
       this.configService.get<string>('EMAIL_VERIFICATION_SECRET') ||
       'clave_temporal_desarrollo';
@@ -263,9 +328,9 @@ export class ExternosService {
       expiraEn: Date.now() + 1000 * 60 * 60 * 24,
     };
 
-    const payloadBase64 = Buffer
-      .from(JSON.stringify(payload))
-      .toString('base64url');
+    const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString(
+      'base64url',
+    );
 
     const firma = createHmac('sha256', secret)
       .update(payloadBase64)
@@ -280,9 +345,7 @@ export class ExternosService {
     expiraEn: number;
   } {
     if (!token) {
-      throw new BadRequestException(
-        'El enlace de verificación no es válido.',
-      );
+      throw new BadRequestException('El enlace de verificación no es válido.');
     }
 
     const secret =
@@ -292,13 +355,11 @@ export class ExternosService {
     const partes = token.split('.');
 
     if (partes.length !== 2) {
-      throw new BadRequestException(
-        'Enlace de verificación inválido.',
-      );
+      throw new BadRequestException('Enlace de verificación inválido.');
     }
 
-    const payloadBase64 = partes[0]!;
-    const firmaRecibida = partes[1]!;
+    const payloadBase64 = partes[0];
+    const firmaRecibida = partes[1];
 
     const firmaEsperada = createHmac('sha256', secret)
       .update(payloadBase64)
@@ -309,14 +370,9 @@ export class ExternosService {
 
     if (
       firmaRecibidaBuffer.length !== firmaEsperadaBuffer.length ||
-      !timingSafeEqual(
-        firmaRecibidaBuffer,
-        firmaEsperadaBuffer,
-      )
+      !timingSafeEqual(firmaRecibidaBuffer, firmaEsperadaBuffer)
     ) {
-      throw new BadRequestException(
-        'Enlace de verificación inválido.',
-      );
+      throw new BadRequestException('Enlace de verificación inválido.');
     }
 
     const payload = JSON.parse(
@@ -328,9 +384,7 @@ export class ExternosService {
     };
 
     if (payload.expiraEn < Date.now()) {
-      throw new BadRequestException(
-        'El enlace de verificación expiró.',
-      );
+      throw new BadRequestException('El enlace de verificación expiró.');
     }
 
     return payload;
@@ -342,36 +396,27 @@ export class ExternosService {
   ) {
     const mailHost = this.configService.get<string>('MAIL_HOST');
 
-    const mailPort = Number(
-      this.configService.get<string>('MAIL_PORT') || 465,
-    );
+    const mailPort = Number(this.configService.get<string>('MAIL_PORT') || 465);
 
     const mailUser = this.configService.get<string>('MAIL_USER');
     const mailPass = this.configService.get<string>('MAIL_PASS');
 
-    const mailFrom =
-      this.configService.get<string>('MAIL_FROM') || mailUser;
+    const mailFrom = this.configService.get<string>('MAIL_FROM') || mailUser;
 
     const backendUrl =
-      this.configService.get<string>('BACKEND_URL') ||
-      'http://localhost:3000';
+      this.configService.get<string>('BACKEND_URL') || 'http://localhost:3000';
 
-    const enlace =
-      `${backendUrl}/api/externos/verificar-correo/${encodeURIComponent(verificationToken)}`;
+    const enlace = `${backendUrl}/api/externos/verificar-correo/${encodeURIComponent(verificationToken)}`;
 
     if (!mailHost || !mailUser || !mailPass) {
-      console.warn(
-        'Correo no configurado. Enlace de verificación:',
-        enlace,
-      );
-
-      return;
+      throw new Error('Configuración SMTP incompleta.');
     }
 
+    const mailSecure = this.configService.get<string>('MAIL_SECURE');
     const transporter = nodemailer.createTransport({
       host: mailHost,
       port: mailPort,
-      secure: mailPort === 465,
+      secure: mailSecure ? mailSecure === 'true' : mailPort === 465,
       auth: {
         user: mailUser,
         pass: mailPass,

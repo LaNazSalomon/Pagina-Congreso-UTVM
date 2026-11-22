@@ -18,7 +18,7 @@
           </span>
 
           <span class="brand-text">
-            Congreso UTVM
+            {{ tituloMenuCongreso }}
           </span>
         </router-link>
 
@@ -30,7 +30,7 @@
           <q-btn
             v-for="item in publicLinks"
             :key="item.label"
-            :ref="(el) => setNavItemRef(el, item.to)"
+            :ref="el => setNavItemRef(el, item.to)"
             flat
             no-caps
             :to="item.to"
@@ -40,7 +40,7 @@
             :class="{
               'nav-btn-active': isActive(item.to),
               'nav-btn-cta': item.variant === 'cta',
-              'nav-btn-admin': item.variant === 'admin',
+              'nav-btn-admin': item.variant === 'admin'
             }"
           />
 
@@ -62,7 +62,7 @@
             icon="login"
             class="nav-btn nav-btn-session"
             :class="{
-              'nav-btn-active': isActive('/login'),
+              'nav-btn-active': isActive('/login')
             }"
           />
 
@@ -76,6 +76,19 @@
             @click="pedirConfirmacionCerrarSesion"
           />
         </nav>
+
+        <q-btn
+          flat
+          dense
+          round
+          class="public-theme-toggle"
+          :icon="isLight ? 'dark_mode' : 'light_mode'"
+          :aria-label="isLight ? 'Activar modo oscuro' : 'Activar modo claro'"
+          :aria-pressed="isLight"
+          @click="toggleTheme"
+        >
+          <q-tooltip>{{ isLight ? "Modo oscuro" : "Modo claro" }}</q-tooltip>
+        </q-btn>
       </q-toolbar>
     </q-header>
 
@@ -89,7 +102,7 @@
     >
       <div class="drawer-header">
         <div>
-          <div class="drawer-title">Congreso UTVM</div>
+          <div class="drawer-title">{{ tituloMenuCongreso }}</div>
           <div class="drawer-subtitle">Menú público</div>
         </div>
 
@@ -115,7 +128,7 @@
           :class="{
             'drawer-item-active': isActive(item.to),
             'drawer-item-cta': item.variant === 'cta',
-            'drawer-item-admin': item.variant === 'admin',
+            'drawer-item-admin': item.variant === 'admin'
           }"
           @click="menuOpen = false"
         >
@@ -158,7 +171,7 @@
           to="/login"
           class="drawer-item drawer-item-session"
           :class="{
-            'drawer-item-active': isActive('/login'),
+            'drawer-item-active': isActive('/login')
           }"
           @click="menuOpen = false"
         >
@@ -240,27 +253,51 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import type { ComponentPublicInstance, CSSProperties } from 'vue';
-import { useQuasar } from 'quasar';
-import { useRoute, useRouter } from 'vue-router';
-import CentroAyuda from '@/components/centroAyuda.vue';
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch
+} from "vue";
+import type { ComponentPublicInstance, CSSProperties } from "vue";
+import { useQuasar } from "quasar";
+import { useRoute, useRouter } from "vue-router";
+import CentroAyuda from "@/components/centroAyuda.vue";
+import { api } from "@/services/api";
+import { salirParticipante } from "@/services/participanteSessionService";
+import { useThemeMode } from "@/composables/useThemeMode";
 
 interface PublicLink {
   label: string;
   to: string;
   icon: string;
-  variant?: 'normal' | 'cta' | 'admin';
+  variant?: "normal" | "cta" | "admin";
+}
+
+interface ApiListResponse<T> {
+  data?: T[];
+}
+
+interface CongresoPublico {
+  id?: string;
+  nombre?: string;
+  titulo?: string;
+  fechaInicio?: string;
+  fecha_inicio?: string;
 }
 
 const route = useRoute();
 const router = useRouter();
 const $q = useQuasar();
+const { isLight, toggleTheme } = useThemeMode();
 
 const menuOpen = ref(false);
 const sesionActiva = ref(false);
 const confirmLogout = ref(false);
 const mostrarCentroAyuda = ref(false);
+const congresos = ref<CongresoPublico[]>([]);
 
 const navRef = ref<HTMLElement | null>(null);
 const navItems = new Map<string, HTMLElement>();
@@ -268,69 +305,97 @@ const navItems = new Map<string, HTMLElement>();
 let indicatorFrame = 0;
 
 const indicatorStyle = ref<CSSProperties>({
-  width: '0px',
-  transform: 'translate3d(0, 0, 0)',
-  opacity: '0',
+  width: "0px",
+  transform: "translate3d(0, 0, 0)",
+  opacity: "0"
+});
+
+const congresoActivo = computed<CongresoPublico | null>(() => {
+  if (!Array.isArray(congresos.value) || congresos.value.length === 0) {
+    return null;
+  }
+
+  return (
+    [...congresos.value].sort((a, b) => {
+      const fechaA = obtenerFechaInicioCongreso(a);
+      const fechaB = obtenerFechaInicioCongreso(b);
+
+      return new Date(fechaB).getTime() - new Date(fechaA).getTime();
+    })[0] ?? null
+  );
+});
+
+const anioCongreso = computed(() => {
+  const nombre = obtenerNombreCongreso(congresoActivo.value);
+  const matchNombre = nombre.match(/\d{4}/);
+
+  if (matchNombre) {
+    return matchNombre[0];
+  }
+
+  const fechaInicio = congresoActivo.value
+    ? obtenerFechaInicioCongreso(congresoActivo.value)
+    : "";
+
+  if (fechaInicio) {
+    return String(new Date(fechaInicio).getFullYear());
+  }
+
+  return "2026";
+});
+
+const tituloMenuCongreso = computed(() => {
+  return `Congreso UTVM ${anioCongreso.value}`;
 });
 
 const publicLinks: PublicLink[] = [
   {
-    label: 'Inicio',
-    to: '/',
-    icon: 'home',
+    label: "Personal",
+    to: "/personal/acceso",
+    icon: "badge",
+    variant: "admin"
   },
   {
-    label: 'Panelistas',
-    to: '/panelistas_u',
-    icon: 'groups',
+    label: "Inicio",
+    to: "/",
+    icon: "home"
   },
   {
-    label: 'Agenda',
-    to: '/agenda',
-    icon: 'calendar_month',
+    label: "Noticias",
+    to: "/noticias",
+    icon: "newspaper"
   },
   {
-    label: 'Conferencias',
-    to: '/conferencias_u',
-    icon: 'mic',
+    label: "Panelistas",
+    to: "/panelistas_u",
+    icon: "groups"
   },
   {
-    label: 'Talleres',
-    to: '/talleres_u',
-    icon: 'construction',
+    label: "Agenda",
+    to: "/agenda",
+    icon: "calendar_month"
   },
   {
-    label: 'Registro Externo',
-    to: '/registro-externo',
-    icon: 'how_to_reg',
-    variant: 'cta',
+    label: "Conferencias",
+    to: "/conferencias_u",
+    icon: "mic"
   },
   {
-    label: 'Mi QR',
-    to: '/mi-qr',
-    icon: 'qr_code_2',
+    label: "Talleres",
+    to: "/talleres_u",
+    icon: "construction"
   },
   {
-    label: 'Admin',
-    to: '/admin/dashboard',
-    icon: 'admin_panel_settings',
-    variant: 'admin',
+    label: "Registro Externo",
+    to: "/registro-externo",
+    icon: "how_to_reg",
+    variant: "cta"
   },
   {
-    label: 'Registro NSU',
-    to: '/registro_nsu',
-    icon: 'school',
-  },
-  {
-    label: 'Registro EMS',
-    to: '/registro_ems',
-    icon: 'groups_2',
-  },
-  {
-    label: 'Registro UTVM',
-    to: '/registro_utvm',
-    icon: 'account_balance',
-  },
+    label: "Mi QR",
+    to: "/mi-qr",
+    icon: "qr_code_2"
+  }
 ];
 
 const handleResize = () => {
@@ -339,18 +404,19 @@ const handleResize = () => {
 
 onMounted(() => {
   cargarSesion();
+  void cargarCongresos();
 
   void nextTick(() => {
     scheduleIndicatorUpdate();
   });
 
-  window.addEventListener('resize', handleResize, {
-    passive: true,
+  window.addEventListener("resize", handleResize, {
+    passive: true
   });
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize);
+  window.removeEventListener("resize", handleResize);
 
   if (indicatorFrame) {
     cancelAnimationFrame(indicatorFrame);
@@ -363,14 +429,48 @@ watch(
     cargarSesion();
     await nextTick();
     scheduleIndicatorUpdate();
-  },
+  }
 );
 
+async function cargarCongresos() {
+  try {
+    const response = await api.get<
+      CongresoPublico[] | ApiListResponse<CongresoPublico>
+    >("congreso");
+    congresos.value = extraerLista(response.data);
+  } catch (error) {
+    congresos.value = [];
+    console.error("No se pudo cargar el congreso público:", error);
+  }
+}
+
+function extraerLista<T>(respuesta: T[] | ApiListResponse<T>): T[] {
+  if (Array.isArray(respuesta)) {
+    return respuesta;
+  }
+
+  if (Array.isArray(respuesta.data)) {
+    return respuesta.data;
+  }
+
+  return [];
+}
+
 function cargarSesion() {
-  const participanteGuardado = localStorage.getItem('participante');
-  const tipoGuardado = localStorage.getItem('tipoParticipante');
+  const participanteGuardado = localStorage.getItem("participante");
+  const tipoGuardado = localStorage.getItem("tipoParticipante");
 
   sesionActiva.value = Boolean(participanteGuardado && tipoGuardado);
+}
+
+function obtenerNombreCongreso(congreso: CongresoPublico | null) {
+  return (
+    congreso?.nombre?.trim() || congreso?.titulo?.trim() || "Congreso UTVM"
+  );
+}
+
+function obtenerFechaInicioCongreso(congreso: CongresoPublico) {
+  return congreso.fechaInicio || congreso.fecha_inicio || "";
 }
 
 function abrirCentroAyuda() {
@@ -384,26 +484,35 @@ function pedirConfirmacionCerrarSesion() {
 }
 
 async function cerrarSesion() {
-  localStorage.removeItem('participante');
-  localStorage.removeItem('tipoParticipante');
-  localStorage.removeItem('correoParticipante');
+  try {
+    await salirParticipante();
+  } catch {
+    $q.notify({
+      type: "negative",
+      message: "No se pudo cerrar la sesión. Intenta de nuevo."
+    });
+    return;
+  }
+  localStorage.removeItem("participante");
+  localStorage.removeItem("tipoParticipante");
+  localStorage.removeItem("correoParticipante");
 
   sesionActiva.value = false;
   menuOpen.value = false;
   confirmLogout.value = false;
 
   $q.notify({
-    type: 'positive',
-    message: 'Sesión cerrada correctamente.',
-    position: 'top',
+    type: "positive",
+    message: "Sesión cerrada correctamente.",
+    position: "top"
   });
 
-  await router.push('/');
+  await router.push("/");
 }
 
 function isActive(path: string) {
-  if (path === '/') {
-    return route.path === '/';
+  if (path === "/") {
+    return route.path === "/";
   }
 
   return route.path === path || route.path.startsWith(`${path}/`);
@@ -411,19 +520,19 @@ function isActive(path: string) {
 
 function setNavItemRef(
   el: Element | ComponentPublicInstance | null,
-  path: string,
+  path: string
 ) {
   if (!el) {
     navItems.delete(path);
     return;
   }
 
-  const element = '$el' in el ? (el.$el as HTMLElement) : (el as HTMLElement);
+  const element = "$el" in el ? (el.$el as HTMLElement) : (el as HTMLElement);
   navItems.set(path, element);
 }
 
 function getActivePath() {
-  return publicLinks.find((item) => isActive(item.to))?.to || '/';
+  return publicLinks.find(item => isActive(item.to))?.to || "/";
 }
 
 function scheduleIndicatorUpdate() {
@@ -454,7 +563,7 @@ function updateIndicator() {
   indicatorStyle.value = {
     width: `${width}px`,
     transform: `translate3d(${left}px, 0, 0)`,
-    opacity: '1',
+    opacity: "1"
   };
 }
 </script>

@@ -34,6 +34,16 @@
   align-items: stretch;
 }
 
+.public-theme-toggle {
+  align-self: center;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  color: #eafbf1;
+  border: 1px solid rgba(102, 245, 181, 0.24);
+  background: rgba(102, 245, 181, 0.08) !important;
+}
+
 .public-brand {
   display: inline-flex;
   align-items: center;
@@ -399,6 +409,10 @@
     flex: 1;
     min-width: 0;
     gap: 0;
+  }
+
+  .public-theme-toggle {
+    order: 3;
   }
 
   .brand-mark {

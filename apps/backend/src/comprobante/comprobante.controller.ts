@@ -3,7 +3,6 @@ import type { Response } from 'express';
 
 import { ComprobanteService } from './comprobante.service';
 
-// TODO: Agregar autenticacion y autorizacion administrativa a este endpoint.
 @Controller('comprobantes')
 export class ComprobanteController {
   constructor(private readonly comprobantes: ComprobanteService) {}

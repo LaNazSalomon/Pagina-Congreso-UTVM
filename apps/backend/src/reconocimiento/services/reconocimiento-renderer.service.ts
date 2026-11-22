@@ -5,10 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { ReconocimientoTipo } from '../enums/reconocimiento-tipo.enum';
-import {
-  RecognitionTemplate,
-  ReconocimientoTemplateRegistryService,
-} from './reconocimiento-template-registry.service';
+import { RecognitionBox, RecognitionLayout } from './reconocimiento-layout';
 
 export interface ReconocimientoRenderContext {
   equipo?: string;
@@ -19,32 +16,32 @@ export interface ReconocimientoRenderContext {
 @Injectable()
 export class ReconocimientoRendererService {
   private readonly resourcesDir = join(__dirname, '..', '..', 'resources');
-  constructor(
-    private readonly registry: ReconocimientoTemplateRegistryService = new ReconocimientoTemplateRegistryService(),
-  ) {}
 
   async render(
     tipo: ReconocimientoTipo,
     nombre: string,
     context: ReconocimientoRenderContext = {},
+    template: { image: Buffer; layout: RecognitionLayout },
   ): Promise<Buffer> {
-    const template = this.registry.get(tipo);
-    const [backgroundBytes, fontBytes] = await Promise.all([
-      readFile(join(this.resourcesDir, 'backgrounds', template.background)),
-      readFile(join(this.resourcesDir, 'fonts', 'NotoSans-Bold.ttf')),
-    ]);
+    const fontBytes = await readFile(
+      join(this.resourcesDir, 'fonts', 'NotoSans-Bold.ttf'),
+    );
     const document = await PDFDocument.create();
     document.registerFontkit(fontkit);
-    const background = await document.embedJpg(backgroundBytes);
+    const background = await document.embedJpg(template.image);
     const font = await document.embedFont(fontBytes, { subset: true });
-    const page = document.addPage([768.25, 598.125]);
+    const page = document.addPage([
+      template.layout.pageWidth ?? 768.25,
+      template.layout.pageHeight ?? 598.125,
+    ]);
     page.drawImage(background, {
       x: 0,
       y: 0,
       width: page.getWidth(),
       height: page.getHeight(),
     });
-    this.drawCenteredName(page, font, nombre.trim(), template.nameBox);
+    const layout = template.layout;
+    this.drawCenteredName(page, font, nombre.trim(), layout.nameBox);
     const details =
       tipo === ReconocimientoTipo.HACKATON_EVALUADOR
         ? [context.participacion ?? 'Participación como evaluador del Hackatón']
@@ -52,13 +49,9 @@ export class ReconocimientoRendererService {
             context.equipo ? `Equipo: ${context.equipo}` : '',
             context.resultado ?? '',
           ];
-    template.detailBoxes?.forEach((box, index) => {
+    layout.detailBoxes.forEach((box, index) => {
       if (details[index])
-        this.drawCenteredName(page, font, details[index], {
-          x: 110,
-          width: 548,
-          ...box,
-        });
+        this.drawCenteredName(page, font, details[index], box);
     });
     return Buffer.from(await document.save());
   }
@@ -67,10 +60,10 @@ export class ReconocimientoRendererService {
     page: PDFPage,
     font: PDFFont,
     nombre: string,
-    box: RecognitionTemplate['nameBox'],
+    box: RecognitionBox,
   ): void {
-    let size = 24;
-    while (size > 12 && font.widthOfTextAtSize(nombre, size) > box.width) {
+    let size = box.size;
+    while (size > 10 && font.widthOfTextAtSize(nombre, size) > box.width) {
       size -= 0.5;
     }
     const width = font.widthOfTextAtSize(nombre, size);
