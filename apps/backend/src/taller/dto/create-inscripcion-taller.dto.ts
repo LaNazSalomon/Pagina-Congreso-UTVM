@@ -6,7 +6,7 @@ export class CreateInscripcionTallerDto {
   @IsEnum(ParticipanteTipo)
   tipoParticipante!: ParticipanteTipo;
 
-  // TODO: Obtener estos identificadores del usuario autenticado.
+  // AccesoGuard exige que coincidan con la sesión del participante.
   @IsString()
   @IsNotEmpty()
   @MaxLength(64)

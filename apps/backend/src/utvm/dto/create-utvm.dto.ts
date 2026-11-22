@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Max,
   Min,
@@ -37,4 +38,8 @@ export class CreateUtvmDto {
   @IsString()
   @Length(10, 15)
   telefono!: string;
+
+  @IsOptional()
+  @IsUUID()
+  congresoId?: string;
 }

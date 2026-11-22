@@ -4,10 +4,8 @@ import type { Hackaton, HackatonPayload, HackatonResultado } from "../types";
 
 const filename = (header: string | undefined, fallback: string) =>
   header?.match(/filename="?([^";]+)"?/)?.[1] ?? fallback;
-const saveBlob = (data: BlobPart, name: string) => {
-  const url = URL.createObjectURL(
-    new Blob([data], { type: "application/zip" })
-  );
+const saveBlob = (data: BlobPart, name: string, type = "application/zip") => {
+  const url = URL.createObjectURL(new Blob([data], { type }));
   const a = document.createElement("a");
   a.href = url;
   a.download = name;
@@ -18,16 +16,18 @@ export function useHackatones() {
   const items = ref<Hackaton[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
-  const load = async () => {
+  let loadRequest = 0;
+  const load = async (congresoId?: string) => {
+    const request = ++loadRequest;
     loading.value = true;
     error.value = null;
     try {
-      const { data } = await api.get("hackatones", { params: { limit: 100 } });
-      items.value = data.data;
+      const { data } = await api.get("hackatones", { params: { limit: 100, ...(congresoId ? { congresoId } : {}) } });
+      if (request === loadRequest) items.value = data.data;
     } catch {
-      error.value = "No se pudieron cargar los Hackatones.";
+      if (request === loadRequest) error.value = "No se pudieron cargar los Hackatones.";
     } finally {
-      loading.value = false;
+      if (request === loadRequest) loading.value = false;
     }
   };
   const get = async (id: string) =>
@@ -39,6 +39,8 @@ export function useHackatones() {
   const remove = async (id: string) => api.delete(`hackatones/${id}`);
   const replaceEvaluators = async (id: string, ids: string[]) =>
     api.put(`hackatones/${id}/evaluadores`, { ponente_ids: ids });
+  const addEvaluators = async (id: string, ids: string[]) =>
+    api.post(`hackatones/${id}/evaluadores`, { ponente_ids: ids });
   const eligible = async (id: string) =>
     (
       await api.get(`hackatones/${id}/participantes-elegibles`, {
@@ -83,6 +85,21 @@ export function useHackatones() {
       filename(r.headers["content-disposition"], "premiacion.zip")
     );
   };
+  const downloadEvaluator = async (hid: string, id: string) => {
+    const r = await api.post(
+      `hackatones/${hid}/evaluadores/${id}/reconocimiento/pdf`,
+      {},
+      { responseType: "blob" }
+    );
+    saveBlob(
+      r.data,
+      filename(
+        r.headers["content-disposition"],
+        "reconocimiento-evaluador.pdf"
+      ),
+      "application/pdf"
+    );
+  };
   return {
     items,
     loading,
@@ -93,11 +110,13 @@ export function useHackatones() {
     update,
     remove,
     replaceEvaluators,
+    addEvaluators,
     eligible,
     saveTeam,
     deleteTeam,
     result,
     downloadEvaluators,
+    downloadEvaluator,
     downloadTeam
   };
 }

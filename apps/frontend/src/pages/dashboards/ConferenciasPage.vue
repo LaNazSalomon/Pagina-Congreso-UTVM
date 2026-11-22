@@ -20,7 +20,7 @@
     </div>
 
     <ConferenciaList
-      :items="data"
+      :items="visibleConferences"
       :ponente-names="ponenteNames"
       :is-refreshing="isRefreshing"
       :error="error"
@@ -33,18 +33,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import ConferenciaList from "../../components/list/ConferenciaList.vue";
 import { useConferenciasQuery } from "../../composables/useConferenciasQuery";
 import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
 import { usePonente } from "../../composables/usePonente";
+import { useAdminCongreso } from "../../composables/useAdminCongreso";
 
 const router = useRouter();
 const $q = useQuasar();
 const { confirmDelete } = useDeleteConfirmation();
 const { data, isRefreshing, error, load, remove } = useConferenciasQuery();
+const { selectedCongressId } = useAdminCongreso();
+const visibleConferences = computed(() => data.value.filter(item =>
+  item.congreso_id === selectedCongressId.value
+));
 const deletingId = ref<string | null>(null);
 const { useGetPonentes } = usePonente();
 const { data: ponentes, refetch: loadPonentes } = useGetPonentes(50, 0, null);
@@ -105,7 +110,7 @@ const handleDelete = async (id: string) => {
   try {
     await remove(id);
     notify("positive", "Conferencia eliminada correctamente.");
-    await load();
+    if (selectedCongressId.value) await load(selectedCongressId.value);
   } catch (err) {
     console.error(err);
     notify("negative", "No se pudo eliminar la conferencia.");
@@ -115,7 +120,8 @@ const handleDelete = async (id: string) => {
 };
 
 onMounted(() => {
-  void load();
+  if (selectedCongressId.value) void load(selectedCongressId.value);
   void loadPonentes();
 });
+watch(selectedCongressId, id => { if (id) void load(id); });
 </script>

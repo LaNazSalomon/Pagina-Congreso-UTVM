@@ -5,12 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { createHash } from 'node:crypto';
 import { DataSource, Repository } from 'typeorm';
 import { Reconocimiento } from '../../reconocimiento/entities/reconocimiento.entity';
 import { ReconocimientoEstado } from '../../reconocimiento/enums/reconocimiento-estado.enum';
 import { ReconocimientoTipo } from '../../reconocimiento/enums/reconocimiento-tipo.enum';
-import { ReconocimientoRendererService } from '../../reconocimiento/services/reconocimiento-renderer.service';
+import { ReconocimientoService } from '../../reconocimiento/reconocimiento.service';
 import { ParticipanteResolverService } from '../../participante-acceso/participante-resolver.service';
 import { HackatonEquipo } from '../entities/hackaton-equipo.entity';
 import { HackatonEvaluador } from '../entities/hackaton-evaluador.entity';
@@ -24,7 +23,7 @@ export class HackatonReconocimientosService {
     private readonly dataSource: DataSource,
     @InjectRepository(Reconocimiento)
     private readonly reconocimientos: Repository<Reconocimiento>,
-    private readonly renderer: ReconocimientoRendererService,
+    private readonly recognitionService: ReconocimientoService,
     private readonly participantResolver: ParticipanteResolverService,
   ) {}
   async evaluadoresZip(hackatonId: string) {
@@ -37,8 +36,9 @@ export class HackatonReconocimientosService {
       throw new BadRequestException(
         'El Hackatón no tiene evaluadores asignados',
       );
+    const assignments = [...hackaton.evaluadores];
     const jobs = await Promise.all(
-      hackaton.evaluadores.map((a) =>
+      assignments.map((a) =>
         this.prepare({
           key: `hackaton:${hackaton.id}:evaluador:${a.ponente.id}`,
           hackaton,
@@ -48,14 +48,39 @@ export class HackatonReconocimientosService {
         }),
       ),
     );
-    const files = await this.renderLimited(
-      jobs.map((recognition) => ({
-        recognition,
-        context: {
-          participacion: `Participación como evaluador de ${hackaton.nombre}`,
-        },
-      })),
+    const files = await this.renderLimited(jobs);
+    await this.markEvaluatorsIssued(assignments.map((item) => item.id));
+    return {
+      zip: buildZip(files),
+      filename: `${this.safe(hackaton.nombre)}-evaluadores.zip`,
+    };
+  }
+
+  async evaluadorPdf(hackatonId: string, evaluadorId: string) {
+    const assignment = await this.dataSource
+      .getRepository(HackatonEvaluador)
+      .findOne({
+        where: { id: evaluadorId, hackaton: { id: hackatonId } },
+        relations: { hackaton: { congreso: true }, ponente: true },
+      });
+    if (!assignment)
+      throw new NotFoundException('Evaluador no encontrado en este Hackatón');
+    const recognition = await this.prepare({
+      key: `hackaton:${hackatonId}:evaluador:${assignment.ponente.id}`,
+      hackaton: assignment.hackaton,
+      ponenteId: assignment.ponente.id,
+      type: ReconocimientoTipo.HACKATON_EVALUADOR,
+      name: assignment.ponente.nombre,
+    });
+    const [file] = await this.renderLimited(
+      [recognition],
+      'No fue posible generar el reconocimiento del evaluador; puede reintentarlo',
     );
+    await this.markEvaluatorsIssued([assignment.id]);
+    return { pdf: file.data, filename: file.name };
+  }
+
+  private async markEvaluatorsIssued(ids: string[]) {
     await this.dataSource
       .getRepository(HackatonEvaluador)
       .createQueryBuilder()
@@ -64,12 +89,9 @@ export class HackatonReconocimientosService {
         reconocimiento_emitido_at: () =>
           'COALESCE(reconocimiento_emitido_at, CURRENT_TIMESTAMP)',
       })
-      .where('hackaton_id = :hackatonId', { hackatonId })
+      .whereInIds(ids)
+      .andWhere('deleted_at IS NULL')
       .execute();
-    return {
-      zip: buildZip(files),
-      filename: `${this.safe(hackaton.nombre)}-evaluadores.zip`,
-    };
   }
   async equipoZip(hackatonId: string, equipoId: string) {
     const team = await this.dataSource.getRepository(HackatonEquipo).findOne({
@@ -98,12 +120,7 @@ export class HackatonReconocimientosService {
       ),
     );
     const label = HACKATON_RESULTADO_LABEL[team.resultado];
-    const files = await this.renderLimited(
-      jobs.map((recognition) => ({
-        recognition,
-        context: { equipo: team.nombre, resultado: label },
-      })),
-    );
+    const files = await this.renderLimited(jobs);
     await this.dataSource.getRepository(HackatonEquipo).update(team.id, {
       reconocimientos_emitidos_at:
         team.reconocimientos_emitidos_at ?? new Date(),
@@ -157,10 +174,8 @@ export class HackatonReconocimientosService {
     return this.reconocimientos.findOneByOrFail({ clave_emision: input.key });
   }
   private async renderLimited(
-    jobs: {
-      recognition: Reconocimiento;
-      context: { equipo?: string; resultado?: string; participacion?: string };
-    }[],
+    jobs: Reconocimiento[],
+    errorMessage = 'No fue posible generar el lote completo; puede reintentarlo',
   ) {
     const results = Array.from<{ name: string; data: Buffer } | undefined>({
       length: jobs.length,
@@ -170,45 +185,24 @@ export class HackatonReconocimientosService {
       while (cursor < jobs.length) {
         const index = cursor++;
         const job = jobs[index];
-        try {
-          const pdf = await this.renderer.render(
-            job.recognition.tipo,
-            job.recognition.nombre_destinatario,
-            job.context,
-          );
-          await this.reconocimientos.update(job.recognition.id, {
-            estado: ReconocimientoEstado.EMITIDO,
-            intentos: job.recognition.intentos + 1,
-            primera_fecha_emision:
-              job.recognition.primera_fecha_emision ?? new Date(),
-            ultimo_error: null,
-            ultimo_pdf_sha256: createHash('sha256').update(pdf).digest('hex'),
-          });
-          results[index] = {
-            name: `${this.safe(job.recognition.nombre_destinatario)}.pdf`,
-            data: pdf,
-          };
-        } catch (error) {
-          await this.reconocimientos.update(job.recognition.id, {
-            estado: ReconocimientoEstado.FALLIDO,
-            intentos: job.recognition.intentos + 1,
-            ultimo_error: error instanceof Error ? error.stack : String(error),
-          });
-          throw error;
-        }
+        const { pdf } = await this.recognitionService.generatePdf(job.id);
+        results[index] = {
+          name: `${this.safe(job.nombre_destinatario)}.pdf`,
+          data: pdf,
+        };
       }
     };
     try {
-      await Promise.all(
+      const workers = await Promise.allSettled(
         Array.from({ length: Math.min(4, jobs.length) }, () => worker()),
       );
+      if (workers.some((result) => result.status === 'rejected'))
+        throw new Error('Fallo al generar reconocimientos');
       return results.filter(
         (item): item is { name: string; data: Buffer } => item !== undefined,
       );
     } catch {
-      throw new InternalServerErrorException(
-        'No fue posible generar el lote completo; puede reintentarlo',
-      );
+      throw new InternalServerErrorException(errorMessage);
     }
   }
   private safe(value: string): string {

@@ -8,6 +8,7 @@
         </div>
       </div>
       <q-btn
+        v-if="tab === 'emitidos'"
         outline
         color="primary"
         icon="refresh"
@@ -18,10 +19,18 @@
       />
     </div>
 
+    <q-tabs v-model="tab" inline-label align="left" active-color="primary" class="q-mb-md">
+      <q-tab name="plantillas" icon="image" label="Plantillas" />
+      <q-tab name="emitidos" icon="workspace_premium" label="Emitidos" />
+    </q-tabs>
+
+    <ReconocimientoPlantillas v-if="tab === 'plantillas'" />
+    <template v-else>
     <q-banner rounded class="recognition-help q-mb-md">
       <template #avatar><q-icon name="info" color="primary" /></template>
       Los reconocimientos aparecen automáticamente cuando termina la actividad.
-      Al descargar se genera el PDF y su estado cambia a emitido.
+      Cada descarga genera un PDF con la plantilla activa del congreso. Si cambias la plantilla,
+      la siguiente descarga individual o en ZIP usará el nuevo diseño.
     </q-banner>
 
     <q-card class="dashboard-card q-pa-md">
@@ -100,22 +109,30 @@
         </q-table>
       </q-card-section>
     </q-card>
+    </template>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import type { QTableColumn } from "quasar";
 import StatePanel from "../../components/feedback/StatePanel.vue";
+import ReconocimientoPlantillas from "../../components/reconocimientos/ReconocimientoPlantillas.vue";
 import { useReconocimientosQuery } from "../../composables/useReconocimientosQuery";
+import { useAdminCongreso } from "../../composables/useAdminCongreso";
 import { useThemeMode } from "../../composables/useThemeMode";
 import type { Reconocimiento, ReconocimientoEstado } from "../../types";
 
 const route = useRoute();
+const router = useRouter();
 const $q = useQuasar();
 const { isLight } = useThemeMode();
+const { selectedCongressId } = useAdminCongreso();
+const tab = ref<"plantillas" | "emitidos">(
+  route.query.tallerId || route.query.conferenciaId ? "emitidos" : "plantillas"
+);
 const {
   data,
   isLoading,
@@ -144,6 +161,13 @@ const estadoOptions = [
 ];
 
 const columns: QTableColumn<Reconocimiento>[] = [
+  {
+    name: "congreso",
+    label: "Congreso",
+    field: row => row.congreso?.nombre ?? "—",
+    align: "left",
+    sortable: true
+  },
   {
     name: "destinatario",
     label: "Destinatario",
@@ -177,13 +201,20 @@ const columns: QTableColumn<Reconocimiento>[] = [
     align: "center",
     sortable: true
   },
+  {
+    name: "plantilla",
+    label: "Plantilla",
+    field: row => row.plantilla ? `Versión ${row.plantilla.version}` : "Original",
+    align: "left"
+  },
   { name: "acciones", label: "Acciones", field: "id", align: "center" }
 ];
 
 const filteredItems = computed(() => {
   const term = search.value.trim().toLocaleLowerCase("es-MX");
-  if (!term) return data.value;
-  return data.value.filter(item =>
+  const currentItems = data.value.filter(item => item.congreso?.id === selectedCongressId.value);
+  if (!term) return currentItems;
+  return currentItems.filter(item =>
     [
       item.nombre_destinatario,
       item.taller?.titulo,
@@ -198,7 +229,8 @@ const filteredItems = computed(() => {
 });
 
 const loadItems = () =>
-  load({
+  selectedCongressId.value ? load({
+    congresoId: selectedCongressId.value,
     ...(tallerId.value ? { tallerId: tallerId.value } : {}),
     ...(conferenciaId.value ? { conferenciaId: conferenciaId.value } : {}),
     ...(tallerId.value
@@ -207,7 +239,16 @@ const loadItems = () =>
         ? { tipo: "CONFERENCISTA" as const }
         : {}),
     ...(estado.value ? { estado: estado.value } : {})
-  });
+  }) : Promise.resolve();
+
+watch(selectedCongressId, async (id, previous) => {
+  if (previous && id !== previous && (tallerId.value || conferenciaId.value)) {
+    await router.replace({
+      query: { ...route.query, tallerId: undefined, conferenciaId: undefined }
+    });
+  }
+  await loadItems();
+});
 
 const statusLabel = (value: ReconocimientoEstado) =>
   ({ PENDIENTE: "Pendiente", EMITIDO: "Emitido", FALLIDO: "Fallido" })[value];
@@ -222,7 +263,7 @@ const downloadPdf = async (item: Reconocimiento) => {
     await download(item);
     $q.notify({
       type: "positive",
-      message: "Reconocimiento generado correctamente.",
+      message: "Reconocimiento descargado correctamente.",
       position: "top"
     });
     await loadItems();

@@ -1,3 +1,4 @@
+import { Publico } from '../personal/acceso.decorator';
 import {
   Controller,
   Get,
@@ -22,11 +23,13 @@ export class CongresoController {
     return this.congresoService.create(createCongresoDto);
   }
 
+  @Publico()
   @Get()
   findAll(): Promise<CongresoFindOneResponseDto[]> {
     return this.congresoService.findAll();
   }
 
+  @Publico()
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,

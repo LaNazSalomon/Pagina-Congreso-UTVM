@@ -2,7 +2,33 @@ import type { RouteRecordRaw } from "vue-router";
 
 const routes: RouteRecordRaw[] = [
   {
+    path: "/personal/restablecer-contrasena",
+    component: () => import("@/layouts/QrAccessLayout.vue"),
+    children: [
+      {
+        path: "",
+        component: () => import("@/pages/PersonalRestablecerContrasenaPage.vue")
+      }
+    ]
+  },
+  {
+    path: "/personal/acceso",
+    component: () => import("@/layouts/QrAccessLayout.vue"),
+    children: [
+      { path: "", component: () => import("@/pages/PersonalLoginPage.vue") }
+    ]
+  },
+  {
+    path: "/validar",
+    meta: { rolPersonal: "VALIDADOR" },
+    component: () => import("@/layouts/QrAccessLayout.vue"),
+    children: [
+      { path: "", component: () => import("@/pages/QrScannerPage.vue") }
+    ]
+  },
+  {
     path: "/acceso/qr/:token",
+    meta: { rolPersonal: "VALIDADOR" },
     component: () => import("@/layouts/QrAccessLayout.vue"),
     children: [
       {
@@ -19,6 +45,14 @@ const routes: RouteRecordRaw[] = [
       {
         path: "",
         component: () => import("@/pages/public_home.vue")
+      },
+      {
+        path: "noticias",
+        component: () => import("@/pages/noticias/NoticiasPage.vue")
+      },
+      {
+        path: "noticias/:slug",
+        component: () => import("@/pages/noticias/NoticiaDetallePage.vue")
       },
       {
         path: "agenda",
@@ -78,8 +112,14 @@ const routes: RouteRecordRaw[] = [
 
   {
     path: "/admin",
+    meta: { rolPersonal: "ADMINISTRADOR" },
     component: () => import("@/pages/index.vue"),
     children: [
+      {
+        path: "usuarios",
+        alias: "/usuarios-roles",
+        component: () => import("@/pages/dashboards/UsuariosRolesPage.vue")
+      },
       {
         path: "",
         redirect: "/admin/dashboard"
@@ -93,6 +133,11 @@ const routes: RouteRecordRaw[] = [
         path: "congresos",
         alias: "/congresos",
         component: () => import("@/pages/dashboards/CongresosPage.vue")
+      },
+      {
+        path: "pagos",
+        alias: "/pagos",
+        component: () => import("@/pages/dashboards/PagosPage.vue")
       },
       {
         path: "congresos/nuevo",

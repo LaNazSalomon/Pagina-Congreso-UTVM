@@ -1,3 +1,4 @@
+import { AccesoPropio, Publico } from '../personal/acceso.decorator';
 import {
   Body,
   Controller,
@@ -5,6 +6,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  ParseArrayPipe,
   Patch,
   Post,
 } from '@nestjs/common';
@@ -18,13 +20,24 @@ import { EnviarQrAccesoDto } from '../participante-qr/dto/enviar-qr-acceso.dto';
 export class EmsController {
   constructor(private readonly emsService: EmsService) {}
 
+  @Publico()
   @Post()
   create(@Body() createEmsDto: CreateEmsDto) {
     return this.emsService.create(createEmsDto);
   }
 
+  @Publico()
   @Post('multiple')
-  createMany(@Body() participantes: CreateEmsDto[]) {
+  createMany(
+    @Body(
+      new ParseArrayPipe({
+        items: CreateEmsDto,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
+    )
+    participantes: CreateEmsDto[],
+  ) {
     return this.emsService.createMany(participantes);
   }
 
@@ -36,6 +49,7 @@ export class EmsController {
     return this.emsService.enviarQrAcceso(id, dto);
   }
 
+  @AccesoPropio({ tipo: 'EMS', idParam: 'id' })
   @Post(':id/qr-acceso/enviar-automatico')
   enviarQrAccesoAutomatico(@Param('id', ParseIntPipe) id: number) {
     return this.emsService.enviarQrAccesoAutomatico(id);

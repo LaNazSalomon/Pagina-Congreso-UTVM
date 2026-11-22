@@ -12,23 +12,20 @@
           <h1>Mi QR de acceso</h1>
 
           <p>
-            Tu registro ya fue validado. Si perdiste el correo donde venía tu QR,
-            puedes solicitar que se genere y envíe nuevamente.
+            Tu registro ya fue validado. Si perdiste el correo donde venía tu
+            QR, puedes solicitar que se genere y envíe nuevamente.
           </p>
         </div>
       </div>
 
-      <div
-        v-if="!participante"
-        class="mi-qr-state"
-      >
+      <div v-if="!participante" class="mi-qr-state">
         <q-icon name="lock" />
 
         <h2>Necesitas iniciar sesión</h2>
 
         <p>
-          Para solicitar el reenvío de tu QR, primero inicia sesión con el correo
-          con el que te registraste.
+          Para solicitar el reenvío de tu QR, primero inicia sesión con el
+          correo con el que te registraste.
         </p>
 
         <q-btn
@@ -40,10 +37,7 @@
         />
       </div>
 
-      <div
-        v-else
-        class="mi-qr-content"
-      >
+      <div v-else class="mi-qr-content">
         <div class="participant-card">
           <div class="participant-avatar">
             {{ iniciales }}
@@ -78,8 +72,8 @@
             <h3>Tu QR se envía a tu correo</h3>
 
             <p>
-              Al presionar el botón, el sistema generará un QR nuevo y lo enviará
-              al correo registrado:
+              Al presionar el botón, el sistema generará un QR nuevo y lo
+              enviará al correo registrado:
               <strong>{{ participante.correo }}</strong>
             </p>
           </div>
@@ -118,15 +112,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { useQuasar } from 'quasar';
-import { useRouter } from 'vue-router';
-import { AxiosError } from 'axios';
-import { reenviarMiQr } from '../services/miQrService';
+import { computed, onMounted, ref } from "vue";
+import { useQuasar } from "quasar";
+import { useRouter } from "vue-router";
+import { AxiosError } from "axios";
+import { reenviarMiQr } from "../services/miQrService";
+import {
+  cargarSesionParticipante,
+  salirParticipante
+} from "../services/participanteSessionService";
 import type {
   ParticipanteLogin,
-  TipoParticipanteLogin,
-} from '../services/loginService';
+  TipoParticipanteLogin
+} from "../services/loginService";
 
 interface ErrorBackend {
   message?: string | string[];
@@ -136,48 +134,33 @@ const router = useRouter();
 const $q = useQuasar();
 
 const participante = ref<ParticipanteLogin | null>(null);
-const tipoParticipante = ref<TipoParticipanteLogin | ''>('');
+const tipoParticipante = ref<TipoParticipanteLogin | "">("");
 const loading = ref(false);
 
 const iniciales = computed(() => {
-  const nombre = participante.value?.nombreCompleto || '';
-  const partes = nombre.trim().split(' ').filter(Boolean);
+  const nombre = participante.value?.nombreCompleto || "";
+  const partes = nombre.trim().split(" ").filter(Boolean);
 
-  const primera = partes[0]?.charAt(0) || '';
-  const segunda = partes[1]?.charAt(0) || '';
+  const primera = partes[0]?.charAt(0) || "";
+  const segunda = partes[1]?.charAt(0) || "";
 
-  return `${primera}${segunda}`.toUpperCase() || 'QR';
+  return `${primera}${segunda}`.toUpperCase() || "QR";
 });
 
-onMounted(() => {
-  cargarSesion();
-});
-
-function cargarSesion() {
-  const participanteGuardado = localStorage.getItem('participante');
-  const tipoGuardado = localStorage.getItem('tipoParticipante');
-
-  if (!participanteGuardado || !tipoGuardado) {
-    participante.value = null;
-    tipoParticipante.value = '';
-    return;
-  }
-
+onMounted(async () => {
   try {
-    participante.value = JSON.parse(participanteGuardado) as ParticipanteLogin;
-    tipoParticipante.value = tipoGuardado as TipoParticipanteLogin;
+    const sesion = await cargarSesionParticipante();
+    participante.value = sesion.participante;
+    tipoParticipante.value = sesion.tipo;
   } catch {
     participante.value = null;
-    tipoParticipante.value = '';
-    localStorage.removeItem('participante');
-    localStorage.removeItem('tipoParticipante');
-    localStorage.removeItem('correoParticipante');
+    tipoParticipante.value = "";
   }
-}
+});
 
 async function reenviarQr() {
   if (!participante.value || !tipoParticipante.value) {
-    await router.push('/login');
+    await router.push("/login");
     return;
   }
 
@@ -186,31 +169,31 @@ async function reenviarQr() {
   try {
     const respuesta = await reenviarMiQr(
       tipoParticipante.value,
-      participante.value,
+      participante.value
     );
 
     $q.notify({
-      type: 'positive',
+      type: "positive",
       message:
         respuesta.mensaje ||
-        'Tu QR fue generado y enviado nuevamente a tu correo.',
-      position: 'top',
+        "Tu QR fue generado y enviado nuevamente a tu correo.",
+      position: "top",
       timeout: 3500,
-      progress: true,
+      progress: true
     });
   } catch (error: unknown) {
-    console.error('Error al reenviar QR:', error);
+    console.error("Error al reenviar QR:", error);
 
     let mensaje =
-      'No fue posible reenviar tu QR. Verifica que tu registro esté validado.';
+      "No fue posible reenviar tu QR. Verifica que tu registro esté validado.";
 
     if (error instanceof AxiosError) {
       const data = error.response?.data as ErrorBackend | undefined;
       const mensajeBackend = data?.message;
 
       if (Array.isArray(mensajeBackend)) {
-        mensaje = mensajeBackend.join(', ');
-      } else if (typeof mensajeBackend === 'string') {
+        mensaje = mensajeBackend.join(", ");
+      } else if (typeof mensajeBackend === "string") {
         mensaje = mensajeBackend;
       }
     } else if (error instanceof Error) {
@@ -218,12 +201,12 @@ async function reenviarQr() {
     }
 
     $q.notify({
-      type: 'negative',
+      type: "negative",
       message: mensaje,
-      position: 'top',
+      position: "top",
       timeout: 4500,
       progress: true,
-      multiLine: true,
+      multiLine: true
     });
   } finally {
     loading.value = false;
@@ -231,17 +214,26 @@ async function reenviarQr() {
 }
 
 async function cerrarSesion() {
-  localStorage.removeItem('participante');
-  localStorage.removeItem('tipoParticipante');
-  localStorage.removeItem('correoParticipante');
+  try {
+    await salirParticipante();
+  } catch {
+    $q.notify({
+      type: "negative",
+      message: "No se pudo cerrar la sesión. Intenta de nuevo."
+    });
+    return;
+  }
+  localStorage.removeItem("participante");
+  localStorage.removeItem("tipoParticipante");
+  localStorage.removeItem("correoParticipante");
 
   $q.notify({
-    type: 'positive',
-    message: 'Sesión cerrada correctamente.',
-    position: 'top',
+    type: "positive",
+    message: "Sesión cerrada correctamente.",
+    position: "top"
   });
 
-  await router.push('/');
+  await router.push("/");
 }
 </script>
 

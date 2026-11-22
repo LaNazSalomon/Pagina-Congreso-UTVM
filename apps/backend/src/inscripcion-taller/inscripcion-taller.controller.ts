@@ -1,3 +1,4 @@
+import { AccesoPropio } from '../personal/acceso.decorator';
 import { Body, Controller, Post } from '@nestjs/common';
 
 import { CrearInscripcionTallerDto } from './dto/crear-inscripcion-taller.dto';
@@ -9,6 +10,7 @@ export class InscripcionTallerController {
     private readonly inscripcionTallerService: InscripcionTallerService,
   ) {}
 
+  @AccesoPropio({ tipoBody: 'tipoParticipante', idBody: 'participanteId' })
   @Post()
   inscribir(@Body() dto: CrearInscripcionTallerDto) {
     return this.inscripcionTallerService.inscribir(dto);

@@ -7,9 +7,15 @@ import { ParticipanteNsu } from './entities/participante-nsu.entity';
 import { CommonModule } from '../common/common.module';
 import { ParticipanteQrModule } from '../participante-qr/participante-qr.module';
 import { ComprobanteModule } from '../comprobante/comprobante.module';
+import { DiaEventoModule } from '../dia-evento/dia-evento.module';
 
 @Module({
-  imports: [CommonModule, ParticipanteQrModule, ComprobanteModule],
+  imports: [
+    CommonModule,
+    ParticipanteQrModule,
+    ComprobanteModule,
+    DiaEventoModule,
+  ],
   controllers: [RegistroNsuController],
   providers: [
     RegistroNsuService,

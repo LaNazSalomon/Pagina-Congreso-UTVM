@@ -1,3 +1,4 @@
+import { Publico } from '../personal/acceso.decorator';
 import {
   Controller,
   Get,
@@ -26,11 +27,13 @@ export class PonenteController {
     return this.ponenteService.createPonente(createPonenteDto);
   }
 
+  @Publico()
   @Get()
   findAll(@Query() query: FindPonenteDto) {
     return this.ponenteService.findAllPonente(query);
   }
 
+  @Publico()
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.ponenteService.findOnePonente(id);

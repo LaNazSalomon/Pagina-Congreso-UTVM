@@ -58,8 +58,11 @@ export class ForoEmpresarialService {
     }
   }
 
-  async findAll(): Promise<ForoEmpresarialResponseDto[]> {
-    const foros = await this.repository.find({ relations: this.relations });
+  async findAll(congresoId?: string): Promise<ForoEmpresarialResponseDto[]> {
+    const foros = await this.repository.find({
+      relations: this.relations,
+      ...(congresoId ? { where: { congreso: { id: congresoId } } } : {}),
+    });
     return foros.map((foro) => this.mapper.toResponse(foro));
   }
 

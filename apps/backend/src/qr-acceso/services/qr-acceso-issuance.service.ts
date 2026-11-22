@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 import { CodigoQr } from '../../codigo-qr/entities/codigo-qr.entity';
@@ -32,6 +32,17 @@ export class QrAccesoIssuanceService {
         data.tipo,
         data.referenciaId,
       );
+      if (
+        participante.congresoId &&
+        (participante.congresoId !== data.congresoId ||
+          data.diaEventoIds.some(
+            (id) => !participante.diaEventoIds?.includes(id),
+          ))
+      ) {
+        throw new BadRequestException(
+          'El QR solo puede autorizar las fechas seleccionadas en el registro.',
+        );
+      }
       const dias = await this.dias.findAuthorized(
         data.congresoId,
         data.diaEventoIds,

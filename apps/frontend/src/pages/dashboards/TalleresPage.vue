@@ -20,7 +20,7 @@
     </div>
 
     <TallerList
-      :items="data"
+      :items="visibleWorkshops"
       :tallerista-names="talleristaNames"
       :is-refreshing="isRefreshing"
       :error="error"
@@ -33,18 +33,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useQuasar } from "quasar";
 import TallerList from "../../components/list/TallerList.vue";
 import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
 import { useTalleresQuery } from "../../composables/useTalleresQuery";
 import { usePonente } from "../../composables/usePonente";
+import { useAdminCongreso } from "../../composables/useAdminCongreso";
 
 const router = useRouter();
 const $q = useQuasar();
 const { confirmDelete } = useDeleteConfirmation();
 const { data, isRefreshing, error, load, remove } = useTalleresQuery();
+const { selectedCongressId } = useAdminCongreso();
+const visibleWorkshops = computed(() => data.value.filter(item =>
+  item.congreso_id === selectedCongressId.value
+));
 const deletingId = ref<string | null>(null);
 const { useGetPonentes } = usePonente();
 const { data: ponentes, refetch: loadPonentes } = useGetPonentes(50, 0, null);
@@ -102,7 +107,7 @@ const handleDelete = async (id: string) => {
   try {
     await remove(id);
     notify("positive", "Taller eliminado correctamente.");
-    await load();
+    if (selectedCongressId.value) await load(selectedCongressId.value);
   } catch (err) {
     console.error(err);
     notify("negative", "No se pudo eliminar el taller.");
@@ -112,7 +117,8 @@ const handleDelete = async (id: string) => {
 };
 
 onMounted(() => {
-  void load();
+  if (selectedCongressId.value) void load(selectedCongressId.value);
   void loadPonentes();
 });
+watch(selectedCongressId, id => { if (id) void load(id); });
 </script>

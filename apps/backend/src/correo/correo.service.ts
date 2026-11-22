@@ -18,9 +18,30 @@ export class CorreoService {
   constructor(
     @Inject(NODEMAILER_TRANSPORT)
     private readonly transporter: Transporter,
+
     private readonly templates: PlantillaCorreoService,
+
     private readonly config: ConfigService,
   ) {}
+
+  async enviarEnlaceContrasenaPersonal(
+    destinatario: string,
+    token: string,
+    minutosVigencia = 30,
+  ): Promise<void> {
+    const accesoUrl = `${this.config.get<string>('FRONTEND_URL', 'http://localhost:9000').replace(/\/$/, '')}/personal/restablecer-contrasena#token=${encodeURIComponent(token)}`;
+    const html = this.templates.renderEnlaceContrasenaPersonal({
+      minutosVigencia,
+      accesoUrl,
+    });
+    await this.transporter.sendMail({
+      from: this.config.getOrThrow<string>('MAIL_FROM'),
+      to: destinatario,
+      subject: 'Configura tu contraseña - Congreso UTVM',
+      html,
+      text: `Abre este enlace para elegir tu contraseña: ${accesoUrl}\nVence en ${minutosVigencia} minutos y solo se puede usar una vez. Tu contraseña actual seguirá funcionando hasta que guardes la nueva. Si no reconoces la solicitud, contacta a un administrador.`,
+    });
+  }
 
   async enviarQrAcceso(datos: DatosCorreoQrAcceso): Promise<void> {
     const html = this.templates.renderQrAcceso({
@@ -44,10 +65,43 @@ export class CorreoService {
           },
         ],
       });
-    } catch {
-      this.logger.error('Fallo el envio del correo de acceso QR');
+    } catch (error) {
+      this.logger.error(
+        'Fallo el envio del correo de acceso QR',
+        error instanceof Error ? error.stack : undefined,
+      );
+
       throw new ServiceUnavailableException(
         'No fue posible enviar el correo de acceso',
+      );
+    }
+  }
+
+  async enviarCodigoLogin(
+    destinatario: string,
+    codigo: string,
+    minutosVigencia = 5,
+  ): Promise<void> {
+    const html = this.templates.renderCodigoLogin({
+      codigo,
+      minutosVigencia,
+    });
+
+    try {
+      await this.transporter.sendMail({
+        from: this.config.getOrThrow<string>('MAIL_FROM'),
+        to: destinatario,
+        subject: 'Código de acceso - Congreso UTVM',
+        html,
+      });
+    } catch (error) {
+      this.logger.error(
+        'Fallo el envio del codigo de acceso',
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      throw new ServiceUnavailableException(
+        'No fue posible enviar el código de acceso',
       );
     }
   }

@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 
 import { ArchivoComprobante } from '../../comprobante/entities/archivo-comprobante.entity';
+import { Congreso } from '../../congreso/entities/congreso.entity';
 
 @Entity('externos')
 export class Externo {
@@ -64,6 +65,16 @@ export class Externo {
 
   @Column('simple-array')
   dias!: string[];
+
+  @Column({ type: 'uuid', name: 'congreso_id', nullable: true })
+  congresoId!: string | null;
+
+  @ManyToOne(() => Congreso, { nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'congreso_id' })
+  congreso?: Congreso | null;
+
+  @Column('uuid', { array: true, nullable: true })
+  diaEventoIds!: string[] | null;
 
   @Column({
     type: 'decimal',

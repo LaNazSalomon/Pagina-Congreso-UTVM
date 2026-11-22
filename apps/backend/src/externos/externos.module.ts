@@ -7,6 +7,7 @@ import { Externo } from './entities/externo.entity';
 import { CommonModule } from '../common/common.module';
 import { ParticipanteQrModule } from '../participante-qr/participante-qr.module';
 import { ComprobanteModule } from '../comprobante/comprobante.module';
+import { DiaEventoModule } from '../dia-evento/dia-evento.module';
 
 @Module({
   imports: [
@@ -14,15 +15,10 @@ import { ComprobanteModule } from '../comprobante/comprobante.module';
     CommonModule,
     ParticipanteQrModule,
     ComprobanteModule,
+    DiaEventoModule,
   ],
-  controllers: [
-    ExternosController,
-  ],
-  providers: [
-    ExternosService,
-  ],
-  exports: [
-    ExternosService,
-  ],
+  controllers: [ExternosController],
+  providers: [ExternosService],
+  exports: [ExternosService],
 })
 export class ExternosModule {}

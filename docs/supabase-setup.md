@@ -106,6 +106,7 @@ SUPABASE_URL=https://TU-PROYECTO.supabase.co
 SUPABASE_SECRET_KEY=tu_service_role_key_aqui
 SUPABASE_BUCKET=congreso-imagenes
 SUPABASE_VOUCHERS_BUCKET=comprobantes-pago
+SUPABASE_PAYMENT_BUCKET=congreso-instrucciones-pago
 SUPABASE_TIMEOUT_MS=15000
 ```
 
@@ -115,6 +116,15 @@ Crea manualmente un bucket llamado `comprobantes-pago` y mantenlo privado. No
 es necesario crear carpetas: el backend genera los prefijos `nsu/` y
 `externos/`. Los vouchers se consultan mediante URLs firmadas que expiran en
 cinco minutos y su ruta interna no se devuelve en los listados.
+
+## PDF de instrucciones de pago
+
+El módulo **Pagos** guarda versiones PDF por congreso en el bucket privado
+`congreso-instrucciones-pago`. El backend lo crea automáticamente al subir el
+primer PDF, si la cuenta de servicio tiene permiso. El público descarga solo la
+versión activa mediante `/api/pagos/:congresoId/instrucciones`; los borradores
+y versiones anteriores solo están disponibles para administradores. No se
+guardan los bytes del PDF en la tabla.
 
 Si no tienes el archivo `.env`, copia el ejemplo:
 
@@ -151,6 +161,7 @@ del bucket configurado.
 | `SUPABASE_SECRET_KEY`      | API key (service_role o anon)                | `eyJhbGci...` o `sb_secret_...` |
 | `SUPABASE_BUCKET`          | Bucket público de imágenes y documentos      | `congreso-imagenes`             |
 | `SUPABASE_VOUCHERS_BUCKET` | Bucket privado de comprobantes de pago       | `comprobantes-pago`             |
+| `SUPABASE_PAYMENT_BUCKET` | Bucket privado de instrucciones de pago      | `congreso-instrucciones-pago`   |
 | `SUPABASE_TIMEOUT_MS`      | Timeout de las solicitudes en milisegundos   | `15000`                         |
 
 > **Nota**: `SUPABASE_BUCKET` tiene valor por defecto `congreso-imagenes`, por lo que es opcional si no cambiaste el nombre del bucket.

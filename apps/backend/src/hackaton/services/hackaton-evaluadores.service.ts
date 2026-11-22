@@ -21,6 +21,18 @@ export class HackatonEvaluadoresService {
   ) {}
 
   async replace(hackatonId: string, dto: ReemplazarEvaluadoresDto) {
+    return this.save(hackatonId, dto, true);
+  }
+
+  async add(hackatonId: string, dto: ReemplazarEvaluadoresDto) {
+    return this.save(hackatonId, dto, false);
+  }
+
+  private async save(
+    hackatonId: string,
+    dto: ReemplazarEvaluadoresDto,
+    replace: boolean,
+  ) {
     await this.dataSource.transaction(async (manager) => {
       const hackaton = await manager
         .getRepository(Hackaton)
@@ -36,7 +48,9 @@ export class HackatonEvaluadoresService {
       const desired = new Set(dto.ponente_ids);
       const blockedRemoval = assignments.find(
         (item) =>
-          !desired.has(item.ponente.id) && item.reconocimiento_emitido_at,
+          replace &&
+          !desired.has(item.ponente.id) &&
+          item.reconocimiento_emitido_at,
       );
       if (blockedRemoval)
         throw new ConflictException(
@@ -56,7 +70,7 @@ export class HackatonEvaluadoresService {
           'Solo pueden asignarse ponentes de tipo Evaluador',
         );
       for (const current of assignments.filter(
-        (item) => !desired.has(item.ponente.id),
+        (item) => replace && !desired.has(item.ponente.id),
       ))
         await manager.getRepository(HackatonEvaluador).softRemove(current);
       const existing = new Set(assignments.map((item) => item.ponente.id));

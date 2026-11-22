@@ -1,5 +1,10 @@
 // app global css
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import "./noticias.scss";
+@import "./participantes-form.scss";
+@import "./public-light.scss";
+@import "./public-sections-light.scss";
+@import "./personal-access.scss";
 
 :root {
   color-scheme: dark;
@@ -36,6 +41,10 @@ body,
 .app-header .q-toolbar-title,
 .app-header .q-btn,
 .app-header .text-caption {
+  color: #ffffff;
+}
+
+.app-header .admin-user-name {
   color: #ffffff;
 }
 
@@ -440,6 +449,10 @@ body.theme-light .app-header {
 body.theme-light .app-header .q-toolbar-title,
 body.theme-light .app-header .q-btn,
 body.theme-light .app-header .text-caption {
+  color: #102b25;
+}
+
+body.theme-light .app-header .admin-user-name {
   color: #102b25;
 }
 

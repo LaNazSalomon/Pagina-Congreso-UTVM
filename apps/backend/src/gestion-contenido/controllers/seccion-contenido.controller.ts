@@ -14,7 +14,6 @@ import { SeccionContenidoResponseDto } from '../dto/seccion-contenido-response.d
 import { UpdateSeccionContenidoDto } from '../dto/update-seccion-contenido.dto';
 import { SeccionContenidoService } from '../services/seccion-contenido.service';
 
-// TODO: Restringir estos endpoints al administrador autenticado.
 @Controller('gestion-contenido/secciones')
 export class SeccionContenidoController {
   constructor(private readonly service: SeccionContenidoService) {}

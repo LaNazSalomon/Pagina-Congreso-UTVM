@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -8,6 +12,7 @@ import { ParticipanteTipo } from '../participante-acceso/participante-tipo.enum'
 import { QrAccesoIssuanceService } from '../qr-acceso/services/qr-acceso-issuance.service';
 import { EnviarQrAccesoDto } from './dto/enviar-qr-acceso.dto';
 import { ParticipanteQrAsignacionService } from './participante-qr-asignacion.service';
+import type { SeleccionRegistro } from './participante-qr-asignacion.service';
 
 export interface EnviarQrAccesoResponse {
   mensaje: string;
@@ -16,6 +21,21 @@ export interface EnviarQrAccesoResponse {
 
 @Injectable()
 export class ParticipanteQrEnvioService {
+  validarSeleccionRegistrada(
+    dto: EnviarQrAccesoDto,
+    registro: SeleccionRegistro,
+  ) {
+    if (
+      registro.congresoId &&
+      (dto.congresoId !== registro.congresoId ||
+        !dto.diaEventoIds.length ||
+        dto.diaEventoIds.some((id) => !registro.diaEventoIds?.includes(id)))
+    ) {
+      throw new BadRequestException(
+        'El QR solo puede autorizar las fechas del congreso seleccionadas en el registro.',
+      );
+    }
+  }
   constructor(
     @InjectRepository(Congreso)
     private readonly congresos: Repository<Congreso>,
@@ -58,8 +78,9 @@ export class ParticipanteQrEnvioService {
     tipo: ParticipanteTipo,
     referenciaId: string,
     diasSeleccionados?: string[] | string,
+    registro?: SeleccionRegistro,
   ): Promise<EnviarQrAccesoResponse> {
-    const dto = await this.asignacion.resolver(diasSeleccionados);
+    const dto = await this.asignacion.resolver(diasSeleccionados, registro);
     return this.enviar(tipo, referenciaId, dto);
   }
 }

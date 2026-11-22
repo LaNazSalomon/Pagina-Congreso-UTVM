@@ -40,6 +40,9 @@ export class EmsParticipanteAdapter implements ParticipanteAdapter {
         .filter(Boolean)
         .join(' '),
       correo: participante.correo,
+      ...(participante.congresoId
+        ? { congresoId: participante.congresoId }
+        : {}),
     };
   }
 }

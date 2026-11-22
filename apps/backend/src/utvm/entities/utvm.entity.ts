@@ -5,7 +5,10 @@ import {
   DeleteDateColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  JoinColumn,
+  ManyToOne,
 } from 'typeorm';
+import { Congreso } from '../../congreso/entities/congreso.entity';
 
 @Entity('utvm')
 export class Utvm {
@@ -38,6 +41,13 @@ export class Utvm {
 
   @Column({ length: 15 })
   telefono!: string;
+
+  @Column({ type: 'uuid', name: 'congreso_id', nullable: true })
+  congresoId!: string | null;
+
+  @ManyToOne(() => Congreso, { nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'congreso_id' })
+  congreso?: Congreso | null;
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   created_at!: Date;

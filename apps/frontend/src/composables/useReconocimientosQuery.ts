@@ -8,6 +8,7 @@ import type {
 } from "../types";
 
 interface ReconocimientoFilters {
+  congresoId?: string;
   tallerId?: string;
   conferenciaId?: string;
   tipo?: ReconocimientoTipo;
@@ -24,14 +25,17 @@ export function useReconocimientosQuery() {
   const total = ref(0);
   const isLoading = ref(false);
   const error = ref<string | null>(null);
+  let loadRequest = 0;
 
   const load = async (filters: ReconocimientoFilters = {}) => {
+    const request = ++loadRequest;
     isLoading.value = true;
     error.value = null;
 
     try {
       const response = await api.get<ReconocimientosPage>("reconocimientos", {
         params: {
+          ...(filters.congresoId ? { congresoId: filters.congresoId } : {}),
           ...(filters.tipo ? { tipo: filters.tipo } : {}),
           limit: 100,
           ...(filters.tallerId ? { tallerId: filters.tallerId } : {}),
@@ -41,13 +45,15 @@ export function useReconocimientosQuery() {
           ...(filters.estado ? { estado: filters.estado } : {})
         }
       });
-      data.value = response.data.data.filter(item => item.ponente);
-      total.value = response.data.total;
+      if (request === loadRequest) {
+        data.value = response.data.data;
+        total.value = response.data.total;
+      }
     } catch (loadError) {
       console.error(loadError);
-      error.value = "No se pudieron cargar los reconocimientos.";
+      if (request === loadRequest) error.value = "No se pudieron cargar los reconocimientos.";
     } finally {
-      isLoading.value = false;
+      if (request === loadRequest) isLoading.value = false;
     }
   };
 

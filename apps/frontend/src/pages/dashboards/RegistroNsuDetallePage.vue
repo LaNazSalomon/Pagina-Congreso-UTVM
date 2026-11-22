@@ -212,6 +212,7 @@ import { useQuasar, type QTableColumn } from "quasar";
 import { useRoute, useRouter } from "vue-router";
 import { useDeleteConfirmation } from "../../composables/useDeleteConfirmation";
 import { useParticipantesAdmin } from "../../composables/useParticipantesAdmin";
+import { formatoDiasRegistro } from "../../composables/useDiasRegistro";
 import { abrirComprobante } from "../../services/comprobanteService";
 import { getQrApiError, qrAccessService } from "../../services/qrAccessService";
 import type {
@@ -255,7 +256,12 @@ const participantColumns: QTableColumn[] = [
     align: "left"
   },
   { name: "carrera", label: "Carrera", field: "carrera", align: "left" },
-  { name: "dias", label: "Días", field: "dias", align: "left" },
+  {
+    name: "dias",
+    label: "Fechas de asistencia",
+    field: (row: ParticipanteNsuDetalle) => formatoDiasRegistro(row.dias),
+    align: "left"
+  },
   {
     name: "monto_individual",
     label: "Monto",

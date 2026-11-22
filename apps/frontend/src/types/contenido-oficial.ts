@@ -83,6 +83,18 @@ export interface AgendaPaginaOficialItem {
   ponente: ContenidoReferencia | null;
 }
 
+export interface NoticiaPublica {
+  id: string;
+  titulo: string;
+  slug: string;
+  portada: ImagenContenido | null;
+  fechaPublicacion: string;
+}
+
+export interface NoticiaPublicaDetalle extends NoticiaPublica {
+  cuerpo: string;
+}
+
 export interface PaginaOficialContenido {
   congreso: ContenidoReferencia;
   secciones: Array<{
@@ -90,13 +102,7 @@ export interface PaginaOficialContenido {
     titulo: string;
     cuerpo: string | null;
   }>;
-  noticias: Array<{
-    id: string;
-    titulo: string;
-    slug: string;
-    portada: ImagenContenido | null;
-    fechaPublicacion: string;
-  }>;
+  noticias: NoticiaPublica[];
   banners: Array<{
     id: string;
     titulo: string | null;

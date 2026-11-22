@@ -1,3 +1,4 @@
+import { Publico } from '../../personal/acceso.decorator';
 import {
   Controller,
   Delete,
@@ -19,7 +20,6 @@ import {
   crearPipeArchivo,
 } from '../services';
 
-// TODO: Agregar autenticacion y autorizacion a todos los endpoints.
 @Controller('archivos')
 export class ArchivoMultimediaController {
   constructor(private readonly storageService: ArchivoStorageService) {}
@@ -36,6 +36,7 @@ export class ArchivoMultimediaController {
     return this.storageService.uploadFile(archivo, 'documentos');
   }
 
+  @Publico()
   @Get(':id')
   findOne(
     @Param('id', new ParseUUIDPipe()) id: string,

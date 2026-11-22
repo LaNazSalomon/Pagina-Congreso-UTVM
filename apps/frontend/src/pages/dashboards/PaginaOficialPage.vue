@@ -8,23 +8,7 @@
         </div>
       </div>
 
-      <q-select
-        v-model="selectedCongressId"
-        class="congress-select"
-        :dark="!isLight"
-        dense
-        outlined
-        emit-value
-        map-options
-        option-label="label"
-        option-value="value"
-        label="Congreso a administrar"
-        :options="congressOptions"
-        :loading="isRefreshing"
-        :disable="isRefreshing || congressOptions.length === 0"
-      >
-        <template #prepend><q-icon name="event" /></template>
-      </q-select>
+      <div class="text-subtitle2">{{ selectedCongress?.nombre }}</div>
     </div>
 
     <StatePanel
@@ -107,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import AgendaAdmin from "../../components/contenido/AgendaAdmin.vue";
@@ -115,53 +99,16 @@ import BannersAdmin from "../../components/contenido/BannersAdmin.vue";
 import NoticiasAdmin from "../../components/contenido/NoticiasAdmin.vue";
 import SeccionesAdmin from "../../components/contenido/SeccionesAdmin.vue";
 import StatePanel from "../../components/feedback/StatePanel.vue";
-import { useCongresosQuery } from "../../composables/useCongresosQuery";
-import { useThemeMode } from "../../composables/useThemeMode";
+import { useAdminCongreso } from "../../composables/useAdminCongreso";
 
-const { data, isRefreshing, error, load } = useCongresosQuery();
-const { isLight } = useThemeMode();
+const { congresos, selectedCongressId, selectedCongress, isRefreshing, error, load } = useAdminCongreso();
 const route = useRoute();
 const validTabs = ["noticias", "agenda", "informacion", "banners"];
 const requestedTab =
   typeof route.query.tab === "string" && validTabs.includes(route.query.tab)
     ? route.query.tab
     : "noticias";
-const requestedCongressId =
-  typeof route.query.congreso === "string" ? route.query.congreso : null;
 const activeTab = ref(requestedTab);
-const selectedCongressId = ref<string | null>(requestedCongressId);
-
-const sortedCongresses = computed(() =>
-  [...data.value].sort((first, second) =>
-    (second.fechaInicio || "").localeCompare(first.fechaInicio || "")
-  )
-);
-
-const congressOptions = computed(() =>
-  sortedCongresses.value.map(congreso => ({
-    label: congreso.nombre,
-    value: congreso.id
-  }))
-);
-
-const selectedCongress = computed(
-  () =>
-    data.value.find(congreso => congreso.id === selectedCongressId.value) ??
-    null
-);
-
-watch(
-  sortedCongresses,
-  congresses => {
-    if (
-      congresses.length &&
-      !congresses.some(congreso => congreso.id === selectedCongressId.value)
-    ) {
-      selectedCongressId.value = congresses[0]?.id ?? null;
-    }
-  },
-  { immediate: true }
-);
 
 watch(
   () => route.query.tab,
@@ -177,21 +124,23 @@ watch(
   congressId => {
     if (
       typeof congressId === "string" &&
-      data.value.some(congreso => congreso.id === congressId)
+      congresos.value.some(congreso => congreso.id === congressId)
     ) {
       selectedCongressId.value = congressId;
     }
-  }
+  },
+  { immediate: true }
 );
 
-onMounted(() => void load());
+watch(congresos, () => {
+  const congressId = route.query.congreso;
+  if (typeof congressId === "string" && congresos.value.some(item => item.id === congressId))
+    selectedCongressId.value = congressId;
+});
+void load();
 </script>
 
 <style scoped>
-.congress-select {
-  width: min(360px, 100%);
-}
-
 .content-shell {
   overflow: hidden;
 }

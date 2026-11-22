@@ -1,19 +1,20 @@
 <template>
-  <q-page class="qr-validation-page flex flex-center q-pa-md">
-    <q-card class="validation-card" flat bordered>
-      <q-card-section class="text-center q-py-lg">
-        <q-avatar :color="stateColor" text-color="white" size="76px">
+  <q-page class="personal-page qr-validation-page">
+    <q-card class="personal-card personal-card--validation" flat bordered>
+      <q-card-section class="personal-card__intro text-center">
+        <q-avatar :color="stateColor" text-color="white" size="72px" class="personal-validation-icon">
           <q-icon :name="stateIcon" size="44px" />
         </q-avatar>
-        <div class="text-h5 text-weight-bold q-mt-md">{{ title }}</div>
-        <div class="text-body2 text-grey-7 q-mt-sm">{{ subtitle }}</div>
+        <span class="personal-card__eyebrow">CONTROL DE ACCESO</span>
+        <h1>{{ title }}</h1>
+        <p class="personal-card__description">{{ subtitle }}</p>
       </q-card-section>
 
       <q-linear-progress v-if="loading" indeterminate color="primary" />
 
       <template v-if="access">
-        <q-separator />
-        <q-list>
+        <q-separator class="personal-separator" />
+        <q-list class="personal-validation-list">
           <q-item>
             <q-item-section avatar
               ><q-icon name="person" color="primary"
@@ -61,11 +62,10 @@
 
       <q-card-actions
         v-if="access && !access.dia.accesoUtilizado"
-        class="q-pa-md"
+        class="personal-card__actions"
       >
         <q-btn
-          class="full-width"
-          color="positive"
+          class="personal-primary-btn full-width"
           size="lg"
           icon="login"
           label="Confirmar entrada"
@@ -74,21 +74,29 @@
         />
       </q-card-actions>
 
-      <q-card-actions v-if="error" class="q-pa-md">
+      <q-card-actions v-if="error" class="personal-card__actions">
         <q-btn
-          class="full-width"
+          class="personal-outline-btn full-width"
           outline
-          color="primary"
           label="Volver a validar"
           @click="inspect"
         />
       </q-card-actions>
+      <q-card-actions class="personal-card__actions personal-card__actions--secondary"
+        ><q-btn
+          flat
+          no-caps
+          icon="qr_code_scanner"
+          label="Escanear otro QR"
+          to="/validar"
+          class="personal-text-btn full-width"
+      /></q-card-actions>
     </q-card>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, watch, ref } from "vue";
 import { useRoute } from "vue-router";
 
 import { getQrApiError, qrAccessService } from "../services/qrAccessService";
@@ -164,19 +172,11 @@ function formatDateTime(value: string) {
   });
 }
 
-onMounted(() => {
-  void inspect();
-});
+watch(
+  token,
+  () => {
+    void inspect();
+  },
+  { immediate: true }
+);
 </script>
-
-<style scoped>
-.qr-validation-page {
-  min-height: calc(100vh - 50px);
-  background: linear-gradient(135deg, #e8f5e9, #e0f2f1);
-}
-
-.validation-card {
-  width: min(100%, 520px);
-  border-radius: 24px;
-}
-</style>

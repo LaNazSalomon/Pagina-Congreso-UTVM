@@ -13,17 +13,10 @@
       </div>
 
       <div class="col-12 col-md-6">
-        <q-select
-          v-model="form.congreso_id"
-          :options="congresoOptions"
-          option-label="label"
-          option-value="value"
-          emit-value
-          map-options
+        <q-input
+          :model-value="selectedCongress?.nombre || ''"
+          readonly
           label="Congreso"
-          :rules="[requiredRule]"
-          :loading="congresosLoading"
-          :disable="congresosLoading"
           dense
           :dark="!isLight"
         />
@@ -149,14 +142,15 @@
         label="Guardar taller"
         type="submit"
         :loading="props.loading"
+        :disable="!selectedCongressId"
       />
     </div>
   </q-form>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
-import { useCongresosQuery } from "../../composables/useCongresosQuery";
+import { computed, onMounted, watch } from "vue";
+import { useAdminCongreso } from "../../composables/useAdminCongreso";
 import { usePonente } from "../../composables/usePonente";
 import { useFormPersistence } from "../../composables/useFormPersistence";
 import { useThemeMode } from "../../composables/useThemeMode";
@@ -184,12 +178,7 @@ const {
   error: talleristasError,
   refetch: loadTalleristas
 } = useGetPonentes(50, 0, null);
-const {
-  data: congresos,
-  isRefreshing: congresosLoading,
-  error: congresosError,
-  load: loadCongresos
-} = useCongresosQuery();
+const { selectedCongressId, selectedCongress } = useAdminCongreso();
 const {
   data: ubicaciones,
   isRefreshing: ubicacionesLoading,
@@ -220,13 +209,6 @@ const talleristaOptions = computed(() => {
   }));
 });
 
-const congresoOptions = computed(() =>
-  congresos.value.map(congreso => ({
-    label: congreso.nombre,
-    value: congreso.id
-  }))
-);
-
 const ubicacionOptions = computed(() =>
   ubicaciones.value.map(ubicacion => ({
     label: ubicacion.nombre,
@@ -235,18 +217,11 @@ const ubicacionOptions = computed(() =>
 );
 
 const catalogsError = computed(
-  () => talleristasError.value || congresosError.value || ubicacionesError.value
+  () => talleristasError.value || ubicacionesError.value
 );
 
 const loadCatalogs = async () => {
-  await Promise.all([loadTalleristas(), loadCongresos(), loadUbicaciones()]);
-
-  if (
-    !congresosError.value &&
-    !congresos.value.some(item => item.id === form.value.congreso_id)
-  ) {
-    form.value.congreso_id = "";
-  }
+  await Promise.all([loadTalleristas(), loadUbicaciones()]);
   if (
     !ubicacionesError.value &&
     !ubicaciones.value.some(item => item.id === form.value.ubicacion_id)
@@ -268,10 +243,13 @@ const positiveIntRule = (value: number) =>
 const submit = () => {
   form.value.cupo_maximo = Number(form.value.cupo_maximo) || 1;
 
-  emit("submit", { ...form.value });
+  if (!selectedCongressId.value) return;
+  emit("submit", { ...form.value, congreso_id: selectedCongressId.value });
 };
 
+watch(selectedCongressId, id => { form.value.congreso_id = id ?? ""; });
 onMounted(() => {
+  form.value.congreso_id = selectedCongressId.value ?? "";
   void loadCatalogs();
 });
 </script>
